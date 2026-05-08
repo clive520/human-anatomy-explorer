@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 探索器 — Human Anatomy Explorer</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/explorer.css" />
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="explorer-header glass-panel">
+    <a href="index.html" class="back-btn">← 返回首頁</a>
+    <div class="explorer-title">3D 人體解剖探索器</div>
+    <div class="header-actions">
+      <!-- Future: User settings or language toggle -->
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="explorer-layout">
+    
+    <!-- Left Panel: System Controls -->
+    <aside class="sidebar left-panel glass-panel">
+      <h3>系統圖層控制</h3>
+      
+      <div class="system-toggles">
+        <label class="toggle-item skeleton-toggle">
+          <input type="checkbox" id="toggle-skeleton" checked />
+          <span class="toggle-label">🦴 骨骼系統 (Skeleton)</span>
+        </label>
+        
+        <label class="toggle-item muscle-toggle">
+          <input type="checkbox" id="toggle-muscle" disabled title="模型建置中" />
+          <span class="toggle-label">💪 肌肉系統 (Muscle)</span>
+        </label>
+        
+        <label class="toggle-item vessel-toggle">
+          <input type="checkbox" id="toggle-vessel" disabled title="模型建置中" />
+          <span class="toggle-label">🫀 血管系統 (Vessel)</span>
+        </label>
+        
+        <label class="toggle-item nerve-toggle">
+          <input type="checkbox" id="toggle-nerve" disabled title="模型建置中" />
+          <span class="toggle-label">🧠 神經系統 (Nerve)</span>
+        </label>
+      </div>
+
+      <div class="control-group">
+        <label for="opacity-slider">整體透明度</label>
+        <input type="range" id="opacity-slider" min="0" max="100" value="100" />
+      </div>
+
+      <div class="control-group">
+        <h4>快速視角</h4>
+        <div class="camera-views">
+          <button class="btn btn-outline btn-sm" data-view="front">正面</button>
+          <button class="btn btn-outline btn-sm" data-view="back">背面</button>
+          <button class="btn btn-outline btn-sm" data-view="left">左側</button>
+          <button class="btn btn-outline btn-sm" data-view="right">右側</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: 3D Canvas Container -->
+    <section class="canvas-container" id="canvas-container">
+      <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>載入高畫質 3D 模型中...</p>
+      </div>
+      <!-- Three.js Canvas will be injected here -->
+    </section>
+
+    <!-- Right Panel: Information Card (Hidden by default) -->
+    <aside class="sidebar right-panel glass-panel" id="info-panel">
+      <button class="close-panel-btn" id="close-info">×</button>
+      <div class="info-content">
+        <div class="info-system-badge" id="info-system">骨骼系統</div>
+        <h2 class="info-title-zh" id="info-title-zh">選擇部位</h2>
+        <h3 class="info-title-en" id="info-title-en">Select a part</h3>
+        <hr class="info-divider" />
+        <p class="info-description" id="info-description">
+          請在 3D 模型上點擊任意部位以查看詳細說明。
+        </p>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Three.js & Dependencies CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  
+  <!-- Application Scripts -->
+  <script src="./js/data/skeleton.js"></script>
+  <script src="./js/scene.js"></script>
+</body>
+</html>

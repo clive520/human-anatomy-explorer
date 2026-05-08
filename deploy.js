@@ -29,6 +29,7 @@ run("git push");
 console.log("✅ GitHub 備份成功！");
 
 // 4. 部署到 Firebase Hosting（純靜態，無需 build 步驟）
-run("npx firebase-tools deploy --only hosting");
+// 使用 cmd /c 繞過 PowerShell 執行原則限制
+run("cmd /c npx firebase-tools deploy --only hosting");
 
 console.log("🎉 部署完成！雲端已更新至最新版本。");

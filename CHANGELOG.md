@@ -4,6 +4,22 @@
 
 ---
 
+## [2026-05-08] — 環境建置完成，首次部署成功
+
+### 新增 (Added)
+- 建立 GitHub Repository：`clive520/human-anatomy-explorer`
+- 建立 Firebase 專案：`human-anatomy-explorer-18e1b`
+- 啟用 Firebase Hosting，網站網址：`https://human-anatomy-explorer-18e1b.web.app`
+- 新增佔位頁面 `index.html`，確認部署流程正常
+- 修正 `deploy.js`：改用 `cmd /c npx` 解決 PowerShell 執行原則限制
+
+### 工作流程確認
+- ✅ GitHub 版控：`git push` 正常
+- ✅ Firebase 部署：`npx firebase-tools deploy --only hosting` 正常
+- ✅ 安全部署腳本 `deploy.js` 已驗證（先 GitHub 後 Firebase）
+
+---
+
 ## [2026-05-08] — 專案初始化
 
 ### 新增 (Added)

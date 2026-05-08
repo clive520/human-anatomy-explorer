@@ -4,28 +4,138 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>人體解剖互動網站 — Human Anatomy Explorer</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #080c14;
-      color: #f0f4f8;
-      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    /* Home Specific Styles */
+    .hero-section {
+      height: 100vh;
       display: flex;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      flex-direction: column;
-      gap: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      padding: 0 10%;
     }
-    h1 { font-size: 2rem; color: #00d4ff; }
-    p  { color: #8ba4c0; }
+
+    .hero-content {
+      flex: 1;
+      max-width: 600px;
+      z-index: 10;
+    }
+
+    .hero-title {
+      font-size: 4rem;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #fff 0%, #8ba4c0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.5rem;
+      color: var(--color-text-muted);
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    /* 3D Canvas Container */
+    #hero-canvas-container {
+      position: absolute;
+      top: 0;
+      right: -10%;
+      width: 60%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none; /* Let clicks pass through if needed, though mostly visual */
+    }
+
+    /* Systems Grid */
+    .systems-section {
+      padding: 5rem 10%;
+      position: relative;
+      z-index: 10;
+      background: linear-gradient(to bottom, transparent, var(--bg-dark));
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .systems-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
   </style>
 </head>
 <body>
-  <h1>🦴 Human Anatomy Explorer</h1>
-  <p>人體解剖互動網站 — 建置中，敬請期待</p>
-  <p style="font-size:0.8rem; margin-top:2rem; color:#4a6280;">
-    Firebase: human-anatomy-explorer-18e1b &nbsp;|&nbsp; GitHub: clive520/human-anatomy-explorer
-  </p>
+
+  <header class="site-header">
+    <div class="logo">
+      🧬 Human Anatomy <span>Explorer</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">探索人體的奧秘</h1>
+        <p class="hero-subtitle">透過 3D 互動模型，深入了解骨骼、肌肉、血管與神經系統的精密結構。</p>
+        <div class="hero-actions">
+          <a href="explorer.html" class="btn btn-primary">開始探索 →</a>
+          <a href="#systems" class="btn btn-outline">了解系統</a>
+        </div>
+      </div>
+      
+      <!-- Three.js Canvas will be injected here -->
+      <div id="hero-canvas-container"></div>
+    </section>
+
+    <section id="systems" class="systems-section">
+      <h2 class="section-title">四大核心系統</h2>
+      <div class="systems-grid">
+        <div class="system-card glass-panel skeleton" onclick="window.location.href='explorer.html?system=skeleton'">
+          <span class="system-icon">🦴</span>
+          <h3 class="system-title">骨骼系統</h3>
+          <p class="system-desc">人體的支架，提供支撐並保護內部器官。</p>
+        </div>
+        <div class="system-card glass-panel muscle" onclick="window.location.href='explorer.html?system=muscle'">
+          <span class="system-icon">💪</span>
+          <h3 class="system-title">肌肉系統</h3>
+          <p class="system-desc">負責身體各部位的運動與維持姿勢。</p>
+        </div>
+        <div class="system-card glass-panel vessel" onclick="window.location.href='explorer.html?system=vessel'">
+          <span class="system-icon">🫀</span>
+          <h3 class="system-title">血管系統</h3>
+          <p class="system-desc">負責運送氧氣、養分與排除廢物。</p>
+        </div>
+        <div class="system-card glass-panel nerve" onclick="window.location.href='explorer.html?system=nerve'">
+          <span class="system-icon">🧠</span>
+          <h3 class="system-title">神經系統</h3>
+          <p class="system-desc">傳遞與處理全身的感覺與運動指令。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Hero Animation Script -->
+  <script src="./js/hero-scene.js"></script>
 </body>
 </html>

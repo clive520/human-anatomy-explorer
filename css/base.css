@@ -1,0 +1,66 @@
+:root {
+  /* Color Palette */
+  --bg-dark: #080c14;
+  --bg-panel: #0d1520;
+  --bg-card: rgba(13, 21, 32, 0.7);
+  
+  /* System Colors */
+  --color-skeleton: #e8dcc8;
+  --color-muscle: #c0392b;
+  --color-vessel-art: #e74c3c;
+  --color-vessel-vein: #2980b9;
+  --color-nerve: #f1c40f;
+  
+  /* Accents & Text */
+  --color-accent: #00d4ff;
+  --color-text-main: #f0f4f8;
+  --color-text-muted: #8ba4c0;
+  
+  /* UI Elements */
+  --border-color: rgba(139, 164, 192, 0.2);
+  --border-radius: 12px;
+  --glass-blur: blur(10px);
+  
+  /* Typography */
+  --font-sans: 'Inter', 'Noto Sans TC', sans-serif;
+  --font-serif: 'Noto Serif', serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--color-text-main);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3f5f;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
