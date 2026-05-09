@@ -77,7 +77,7 @@ function loadModels() {
   
   // 載入骨骼模型
   loader.load(
-    './models/skeleton.glb',
+    './models/skeleton_bodyexplorer.glb',
     (gltf) => {
       skeletonModel = gltf.scene;
       
@@ -153,23 +153,13 @@ function selectPart(mesh) {
   }
   
   selectedMesh = mesh;
-  // 套用高亮材質
-  selectedMesh.material = outlineMaterial;
-  
-  // 嘗試從資料庫尋找對應說明
-  // 注意：這裡使用 toLowerCase 比對，實際需依據您的 GLB Mesh 命名調整
-  const meshName = mesh.name.toLowerCase();
-  let partData = window.ANATOMY_DATA.skeleton.default;
-  
-  // 簡單的比對邏輯
-  for (const key in window.ANATOMY_DATA.skeleton) {
-    if (meshName.includes(key)) {
-      partData = window.ANATOMY_DATA.skeleton[key];
-      break;
-    }
-  }
+  selectedMesh.material = outlineMaterial.clone();
 
-  showInfoPanel(partData, mesh.name);
+  // 使用精確比對：mesh.name 即為骨頭英文名稱（如 "left femur"）
+  const meshName = mesh.name.toLowerCase();
+  const data = window.getAnatomyData(mesh.name);
+
+  showInfoPanel(data, mesh.name);
 }
 
 // UI 互動：資訊面板
@@ -177,16 +167,8 @@ function showInfoPanel(data, rawName) {
   const panel = document.getElementById('info-panel');
   document.getElementById('info-system').innerText = data.system;
   document.getElementById('info-title-zh').innerText = data.zh;
-  
-  // 如果找不到對應資料，顯示原始 Mesh 名稱供除錯
-  if(data.zh === "人類骨骼系統") {
-     document.getElementById('info-title-en').innerText = data.en + ` (${rawName})`;
-  } else {
-     document.getElementById('info-title-en').innerText = data.en;
-  }
-  
+  document.getElementById('info-title-en').innerText = data.en;
   document.getElementById('info-description').innerText = data.desc;
-  
   panel.classList.add('open');
 }
 
