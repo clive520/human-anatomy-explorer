@@ -4,6 +4,21 @@
 
 ---
 
+## [2026-05-08] — 骨骼系統 3D 核心上線
+
+### 新增 (Added)
+- 下載並整合開源 `skeleton.glb` 高畫質 3D 骨骼模型 (26MB)。
+- 建立 `explorer.html` 探索器主介面，支援響應式與玻璃擬態設計。
+- 實作 `scene.js` (Three.js 核心邏輯)：
+  - 支援模型自動計算 Bounding Box 進行置中與等比例縮放。
+  - 實作 OrbitControls (滑鼠旋轉、縮放、平移)。
+  - 實作 Raycaster，支援點擊模型任一部位高亮選取。
+- 實作左側控制台：圖層開關、整體透明度滑桿、快速視角切換 (正面/背面/左右)。
+- 實作右側智慧資訊面板：點擊部位自動對應 `skeleton.js` 資料庫顯示中英說明。
+- 正式部署至 Firebase Hosting (`human-anatomy-explorer-18e1b.web.app`)。
+
+---
+
 ## [2026-05-08] — 環境建置完成，首次部署成功
 
 ### 新增 (Added)
