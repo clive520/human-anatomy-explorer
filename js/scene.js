@@ -2,6 +2,7 @@
 
 let scene, camera, renderer, controls;
 let skeletonModel;
+let muscleModel;
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -75,6 +76,19 @@ function init() {
 function loadModels() {
   const loader = new THREE.GLTFLoader();
   
+  let loadedCount = 0;
+  const checkAllLoaded = () => {
+    loadedCount++;
+    if (loadedCount >= 2) {
+      document.getElementById('loading-overlay').style.display = 'none';
+    }
+  };
+
+  const handleError = (error) => {
+    console.error('載入模型發生錯誤:', error);
+    document.getElementById('loading-overlay').innerHTML = '<p style="color:red;">模型載入失敗，請檢查檔案路徑。</p>';
+  };
+
   // 載入骨骼模型
   loader.load(
     './models/skeleton_bodyexplorer.glb',
@@ -86,36 +100,61 @@ function loadModels() {
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
       
-      // 計算最大維度，並將模型縮放到大約高 2 單位
       const maxDim = Math.max(size.x, size.y, size.z);
       const scale = 2.0 / maxDim;
       skeletonModel.scale.set(scale, scale, scale);
       
-      // 將模型中心點移到 (0, 1, 0)
       skeletonModel.position.x = -center.x * scale;
       skeletonModel.position.y = (-center.y * scale) + 1.0;
       skeletonModel.position.z = -center.z * scale;
       
-      // 確保所有 Mesh 投射陰影並儲存原始材質
       skeletonModel.traverse((child) => {
         if (child.isMesh) {
+          child.userData.system = 'skeleton';
           originalMaterials.set(child.uuid, child.material);
         }
       });
 
       scene.add(skeletonModel);
+      checkAllLoaded();
+    },
+    undefined,
+    handleError
+  );
+
+  // 載入肌肉模型
+  loader.load(
+    './models/muscles.glb',
+    (gltf) => {
+      muscleModel = gltf.scene;
       
-      // 隱藏載入畫面
-      document.getElementById('loading-overlay').style.display = 'none';
+      const box = new THREE.Box3().setFromObject(muscleModel);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2.0 / maxDim;
+      muscleModel.scale.set(scale, scale, scale);
+      
+      muscleModel.position.x = -center.x * scale;
+      muscleModel.position.y = (-center.y * scale) + 1.0;
+      muscleModel.position.z = -center.z * scale;
+      
+      muscleModel.traverse((child) => {
+        if (child.isMesh) {
+          child.userData.system = 'muscle';
+          originalMaterials.set(child.uuid, child.material);
+        }
+      });
+
+      const toggleCheckbox = document.getElementById('toggle-muscle');
+      muscleModel.visible = toggleCheckbox ? toggleCheckbox.checked : false;
+
+      scene.add(muscleModel);
+      checkAllLoaded();
     },
-    (xhr) => {
-      // 可在此加入進度條邏輯
-      console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-    },
-    (error) => {
-      console.error('載入模型發生錯誤:', error);
-      document.getElementById('loading-overlay').innerHTML = '<p style="color:red;">模型載入失敗，請檢查檔案路徑。</p>';
-    }
+    undefined,
+    handleError
   );
 }
 
@@ -132,10 +171,13 @@ function onMouseMove(event) {
 function onClick(event) {
   raycaster.setFromCamera(mouse, camera);
   
-  // 僅檢查骨骼模型
-  if (!skeletonModel) return;
+  const interactableModels = [];
+  if (muscleModel && muscleModel.visible) interactableModels.push(muscleModel);
+  if (skeletonModel && skeletonModel.visible) interactableModels.push(skeletonModel);
   
-  const intersects = raycaster.intersectObject(skeletonModel, true);
+  if (interactableModels.length === 0) return;
+  
+  const intersects = raycaster.intersectObjects(interactableModels, true);
   
   if (intersects.length > 0) {
     const object = intersects[0].object;
@@ -155,9 +197,9 @@ function selectPart(mesh) {
   selectedMesh = mesh;
   selectedMesh.material = outlineMaterial.clone();
 
-  // 使用精確比對：mesh.name 即為骨頭英文名稱（如 "left femur"）
-  const meshName = mesh.name.toLowerCase();
-  const data = window.getAnatomyData(mesh.name);
+  // 使用精確比對：mesh.name 即為骨頭/肌肉英文名稱
+  const systemType = mesh.userData.system || 'skeleton';
+  const data = window.getAnatomyData(mesh.name, systemType);
 
   showInfoPanel(data, mesh.name);
 }
@@ -185,27 +227,40 @@ function setupUIControls() {
   // 關閉面板按鈕
   document.getElementById('close-info').addEventListener('click', closeInfoPanel);
 
-  // 系統開關 (目前僅有骨骼)
+  // 系統開關 (目前有骨骼與肌肉)
   const toggleSkeleton = document.getElementById('toggle-skeleton');
   toggleSkeleton.addEventListener('change', (e) => {
     if (skeletonModel) skeletonModel.visible = e.target.checked;
   });
 
+  const toggleMuscle = document.getElementById('toggle-muscle');
+  if (toggleMuscle) {
+    toggleMuscle.addEventListener('change', (e) => {
+      if (muscleModel) muscleModel.visible = e.target.checked;
+    });
+  }
+
   // 透明度滑桿
   const opacitySlider = document.getElementById('opacity-slider');
   opacitySlider.addEventListener('input', (e) => {
     const opacity = e.target.value / 100;
-    if (skeletonModel) {
-      skeletonModel.traverse((child) => {
-        if (child.isMesh) {
-          const mat = originalMaterials.get(child.uuid);
-          if (mat) {
-            mat.transparent = true;
-            mat.opacity = opacity;
+    
+    const updateOpacity = (model) => {
+      if (model) {
+        model.traverse((child) => {
+          if (child.isMesh) {
+            const mat = originalMaterials.get(child.uuid);
+            if (mat) {
+              mat.transparent = true;
+              mat.opacity = opacity;
+            }
           }
-        }
-      });
-    }
+        });
+      }
+    };
+    
+    updateOpacity(skeletonModel);
+    updateOpacity(muscleModel);
   });
 
   // 視角快捷鍵

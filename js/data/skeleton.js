@@ -131,13 +131,37 @@ window.ANATOMY_DATA = {
 
 // ===== 智慧後備函式 =====
 // 若模型 Mesh 名稱不在資料庫中，自動格式化英文名稱並推斷中文分類
-window.getAnatomyData = function(meshName) {
+window.getAnatomyData = function(meshName, type = 'skeleton') {
   const name = meshName.toLowerCase();
-  const data = window.ANATOMY_DATA.skeleton[name];
+  
+  // 依照傳入的系統類型，選擇對應的資料庫
+  const database = window.ANATOMY_DATA[type] || window.ANATOMY_DATA.skeleton;
+  const data = database[name];
   if (data) return data;
 
-  // 後備：將英文名稱格式化（首字母大寫）
-  const enName = meshName.replace(/\b\w/g, c => c.toUpperCase());
+  // 後備：將英文名稱格式化（首字母大寫，移除可能有的底線或雜訊）
+  const cleanName = meshName.replace(/[_]/g, ' ');
+  const enName = cleanName.replace(/\b\w/g, c => c.toUpperCase());
+  
+  // 肌肉系統後備邏輯
+  if (type === 'muscle') {
+    let system = "肌肉系統";
+    if (name.includes("flexor")) system = "屈肌";
+    else if (name.includes("extensor")) system = "伸肌";
+    else if (name.includes("adductor")) system = "內收肌";
+    else if (name.includes("abductor")) system = "外展肌";
+    else if (name.includes("pectoralis")) system = "胸部肌肉";
+    else if (name.includes("gluteus")) system = "臀部肌肉";
+
+    return {
+      zh: enName,
+      en: enName,
+      system: system,
+      desc: `${enName} — 人體肌肉系統的組成部分。`
+    };
+  }
+
+  // 骨骼系統後備邏輯
   let system = "骨骼系統";
   if (name.includes("phalanx")) system = name.includes("toe") ? "趾骨" : "指骨";
   else if (name.includes("metacarpal")) system = "掌骨";
