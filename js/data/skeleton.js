@@ -161,6 +161,24 @@ window.getAnatomyData = function(meshName, type = 'skeleton') {
     };
   }
 
+  // 血管系統後備邏輯
+  if (type === 'vascular') {
+    let system = "血管系統";
+    if (name.includes("artery") || name.includes("aorta")) system = "動脈";
+    else if (name.includes("vein") || name.includes("vena")) system = "靜脈";
+
+    // 血管名稱的特例處理：移除 vh_m_ 前綴
+    let displayName = cleanName.replace(/^vh m /, '');
+    displayName = displayName.replace(/\b\w/g, c => c.toUpperCase());
+
+    return {
+      zh: displayName,
+      en: displayName,
+      system: system,
+      desc: `${displayName} — 循環系統的重要血管。`
+    };
+  }
+
   // 骨骼系統後備邏輯
   let system = "骨骼系統";
   if (name.includes("phalanx")) system = name.includes("toe") ? "趾骨" : "指骨";

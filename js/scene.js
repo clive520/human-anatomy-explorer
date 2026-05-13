@@ -3,6 +3,7 @@
 let scene, camera, renderer, controls;
 let skeletonModel;
 let muscleModel;
+let vascularModel;
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -79,7 +80,7 @@ function loadModels() {
   let loadedCount = 0;
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 2) {
+    if (loadedCount >= 3) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -156,6 +157,41 @@ function loadModels() {
     undefined,
     handleError
   );
+
+  // 載入血管模型
+  loader.load(
+    './models/vascular.glb',
+    (gltf) => {
+      vascularModel = gltf.scene;
+      
+      const box = new THREE.Box3().setFromObject(vascularModel);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2.0 / maxDim;
+      vascularModel.scale.set(scale, scale, scale);
+      
+      vascularModel.position.x = -center.x * scale;
+      vascularModel.position.y = (-center.y * scale) + 1.0;
+      vascularModel.position.z = -center.z * scale;
+      
+      vascularModel.traverse((child) => {
+        if (child.isMesh) {
+          child.userData.system = 'vascular';
+          originalMaterials.set(child.uuid, child.material);
+        }
+      });
+
+      const toggleCheckbox = document.getElementById('toggle-vascular');
+      vascularModel.visible = toggleCheckbox ? toggleCheckbox.checked : false;
+
+      scene.add(vascularModel);
+      checkAllLoaded();
+    },
+    undefined,
+    handleError
+  );
 }
 
 // 處理滑鼠移動 (Hover 效果)
@@ -174,6 +210,7 @@ function onClick(event) {
   const interactableModels = [];
   if (muscleModel && muscleModel.visible) interactableModels.push(muscleModel);
   if (skeletonModel && skeletonModel.visible) interactableModels.push(skeletonModel);
+  if (vascularModel && vascularModel.visible) interactableModels.push(vascularModel);
   
   if (interactableModels.length === 0) return;
   
@@ -240,6 +277,13 @@ function setupUIControls() {
     });
   }
 
+  const toggleVascular = document.getElementById('toggle-vascular');
+  if (toggleVascular) {
+    toggleVascular.addEventListener('change', (e) => {
+      if (vascularModel) vascularModel.visible = e.target.checked;
+    });
+  }
+
   // 透明度滑桿
   const opacitySlider = document.getElementById('opacity-slider');
   opacitySlider.addEventListener('input', (e) => {
@@ -261,6 +305,7 @@ function setupUIControls() {
     
     updateOpacity(skeletonModel);
     updateOpacity(muscleModel);
+    updateOpacity(vascularModel);
   });
 
   // 視角快捷鍵
