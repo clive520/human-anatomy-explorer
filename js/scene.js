@@ -4,6 +4,7 @@ let scene, camera, renderer, controls;
 let skeletonModel;
 let muscleModel;
 let vascularModel;
+window.debugModels = { skeleton: null, muscle: null, vascular: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -78,6 +79,9 @@ function loadModels() {
   const loader = new THREE.GLTFLoader();
   
   let loadedCount = 0;
+  let baseScale = 1.0;
+  let baseCenter = new THREE.Vector3();
+
   const checkAllLoaded = () => {
     loadedCount++;
     if (loadedCount >= 3) {
@@ -96,18 +100,24 @@ function loadModels() {
     (gltf) => {
       skeletonModel = gltf.scene;
       
-      // 自動置中與縮放模型
+      // BodyExplorer models are Z-up (Blender export), so rotate to Y-up
+      skeletonModel.rotation.x = -Math.PI / 2;
+      skeletonModel.updateMatrixWorld(true);
+
       const box = new THREE.Box3().setFromObject(skeletonModel);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
+      console.log("Skeleton raw bounds:", { center, size });
       
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 2.0 / maxDim;
-      skeletonModel.scale.set(scale, scale, scale);
+      baseScale = 2.0 / maxDim;
+      baseCenter.copy(center);
+
+      skeletonModel.scale.set(baseScale, baseScale, baseScale);
       
-      skeletonModel.position.x = -center.x * scale;
-      skeletonModel.position.y = (-center.y * scale) + 1.0;
-      skeletonModel.position.z = -center.z * scale;
+      skeletonModel.position.x = -baseCenter.x * baseScale;
+      skeletonModel.position.y = (-baseCenter.y * baseScale) + 1.0;
+      skeletonModel.position.z = -baseCenter.z * baseScale;
       
       skeletonModel.traverse((child) => {
         if (child.isMesh) {
@@ -129,17 +139,14 @@ function loadModels() {
     (gltf) => {
       muscleModel = gltf.scene;
       
-      const box = new THREE.Box3().setFromObject(muscleModel);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 2.0 / maxDim;
-      muscleModel.scale.set(scale, scale, scale);
-      
-      muscleModel.position.x = -center.x * scale;
-      muscleModel.position.y = (-center.y * scale) + 1.0;
-      muscleModel.position.z = -center.z * scale;
+      muscleModel.rotation.x = -Math.PI / 2;
+      muscleModel.updateMatrixWorld(true);
+
+      // Apply the exact same scale and center as the skeleton
+      muscleModel.scale.set(baseScale, baseScale, baseScale);
+      muscleModel.position.x = -baseCenter.x * baseScale;
+      muscleModel.position.y = (-baseCenter.y * baseScale) + 1.0;
+      muscleModel.position.z = -baseCenter.z * baseScale;
       
       muscleModel.traverse((child) => {
         if (child.isMesh) {
@@ -165,16 +172,18 @@ function loadModels() {
       vascularModel = gltf.scene;
       
       const box = new THREE.Box3().setFromObject(vascularModel);
-      const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      
       const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 2.0 / maxDim;
-      vascularModel.scale.set(scale, scale, scale);
       
-      vascularModel.position.x = -center.x * scale;
-      vascularModel.position.y = (-center.y * scale) + 1.0;
-      vascularModel.position.z = -center.z * scale;
+      // Vascular model is from HRA. It is Y-up already.
+      // We manually tune its scale to match the skeleton.
+      // Ideal parameters found via tuning:
+      const vascularScale = (1.6 / maxDim);
+      vascularModel.scale.set(vascularScale, vascularScale, vascularScale);
+      
+      // Position it correctly within the chest and abdomen
+      vascularModel.position.set(0, 1.35, -0.05);
+      window.vascularModel = vascularModel;
       
       vascularModel.traverse((child) => {
         if (child.isMesh) {
