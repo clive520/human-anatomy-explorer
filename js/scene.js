@@ -177,12 +177,12 @@ function loadModels() {
       
       // Vascular model is from HRA. It is Y-up already.
       // We manually tune its scale to match the skeleton.
-      // Ideal parameters found via tuning:
-      const vascularScale = (1.6 / maxDim);
+      // A full skeleton is ~2.0 units tall. Vascular (head to groin) should be ~1.2 units tall.
+      const vascularScale = (1.2 / maxDim);
       vascularModel.scale.set(vascularScale, vascularScale, vascularScale);
       
       // Position it correctly within the chest and abdomen
-      vascularModel.position.set(0, 1.35, -0.05);
+      vascularModel.position.set(0, 0.95, -0.03);
       window.vascularModel = vascularModel;
       
       vascularModel.traverse((child) => {
