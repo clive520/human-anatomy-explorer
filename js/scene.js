@@ -4,7 +4,8 @@ let scene, camera, renderer, controls;
 let skeletonModel;
 let muscleModel;
 let vascularModel;
-window.debugModels = { skeleton: null, muscle: null, vascular: null };
+let nerveModel = new THREE.Group();
+window.debugModels = { skeleton: null, muscle: null, vascular: null, nerve: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -84,7 +85,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 3) {
+    if (loadedCount >= 5) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -201,6 +202,55 @@ function loadModels() {
     undefined,
     handleError
   );
+
+  // 載入神經模型 (大腦與脊髓)
+  // 為了讓大腦精準落入顱腔 (約 Y=1.65~1.85) 且脊髓落入脊椎管 (約 Y=1.0~1.65)，
+  // 我們保持與血管相同的 HRA 原生縮放比例，但獨立調整高度偏移。
+  const hraScale = 1.2 / 0.871836645; // 1.376
+  nerveModel.scale.set(hraScale, hraScale, hraScale);
+  nerveModel.position.set(0, 0.615, -0.05); // Y=0.615 使大腦剛好在頭骨內，-0.05 貼齊脊柱
+  
+  scene.add(nerveModel);
+  const toggleNerveCheckbox = document.getElementById('toggle-nerve');
+  nerveModel.visible = toggleNerveCheckbox ? toggleNerveCheckbox.checked : false;
+
+  loader.load(
+    './models/brain.glb',
+    (gltf) => {
+      const brain = gltf.scene;
+      
+      brain.traverse((child) => {
+        if (child.isMesh) {
+          child.userData.system = 'nerve';
+          originalMaterials.set(child.uuid, child.material);
+        }
+      });
+      nerveModel.add(brain);
+      checkAllLoaded();
+    },
+    undefined,
+    handleError
+  );
+
+  loader.load(
+    './models/spinal_cord.glb',
+    (gltf) => {
+      const spinal = gltf.scene;
+      
+      spinal.traverse((child) => {
+        if (child.isMesh) {
+          child.userData.system = 'nerve';
+          originalMaterials.set(child.uuid, child.material);
+        }
+      });
+      nerveModel.add(spinal);
+      window.debugModels.nerve = nerveModel;
+      window.nerveModel = nerveModel;
+      checkAllLoaded();
+    },
+    undefined,
+    handleError
+  );
 }
 
 // 處理滑鼠移動 (Hover 效果)
@@ -220,6 +270,7 @@ function onClick(event) {
   if (muscleModel && muscleModel.visible) interactableModels.push(muscleModel);
   if (skeletonModel && skeletonModel.visible) interactableModels.push(skeletonModel);
   if (vascularModel && vascularModel.visible) interactableModels.push(vascularModel);
+  if (nerveModel && nerveModel.visible) interactableModels.push(nerveModel);
   
   if (interactableModels.length === 0) return;
   
@@ -293,6 +344,13 @@ function setupUIControls() {
     });
   }
 
+  const toggleNerve = document.getElementById('toggle-nerve');
+  if (toggleNerve) {
+    toggleNerve.addEventListener('change', (e) => {
+      if (nerveModel) nerveModel.visible = e.target.checked;
+    });
+  }
+
   // 透明度滑桿
   const opacitySlider = document.getElementById('opacity-slider');
   opacitySlider.addEventListener('input', (e) => {
@@ -315,6 +373,7 @@ function setupUIControls() {
     updateOpacity(skeletonModel);
     updateOpacity(muscleModel);
     updateOpacity(vascularModel);
+    updateOpacity(nerveModel);
   });
 
   // 視角快捷鍵
