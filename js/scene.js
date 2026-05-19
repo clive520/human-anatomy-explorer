@@ -208,8 +208,8 @@ function loadModels() {
   // 我們保持與血管相同的 HRA 原生縮放比例，但獨立調整高度偏移。
   const hraScale = 1.2 / 0.871836645; // 1.376
   brainSpineModel.scale.set(hraScale, hraScale, hraScale);
-  brainSpineModel.rotation.y = Math.PI; // 將模型水平旋轉 180 度以配合骨架的朝向
-  brainSpineModel.position.set(0, 0.74, 0.0); // 高度 0.74，Z 軸回歸 0
+  brainSpineModel.rotation.y = 0; // 確保沒有錯誤的旋轉
+  brainSpineModel.position.set(0, 0.74, -0.03); // 高度 0.74，Z 軸 -0.03 使其落入脊椎管與顱腔
   
   scene.add(brainSpineModel);
   const toggleBrainSpineCheckbox = document.getElementById('toggle-brain-spine');
