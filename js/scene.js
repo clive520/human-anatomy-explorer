@@ -1,11 +1,13 @@
 // 3D 探索器主程式邏輯
 
 let scene, camera, renderer, controls;
-let skeletonModel;
-let muscleModel;
-let vascularModel;
+let skeletonModel = null;
+let muscleModel = null;
+let vascularModel = null;
 let brainSpineModel = new THREE.Group();
-window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null };
+let peripheralNervesModel = null;
+let interactableModels = [];
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, peripheral_nerves: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -85,7 +87,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 5) {
+    if (loadedCount >= 6) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -100,22 +102,17 @@ function loadModels() {
     './models/skeleton_bodyexplorer.glb',
     (gltf) => {
       skeletonModel = gltf.scene;
-      
-      // BodyExplorer models are Z-up (Blender export), so rotate to Y-up
       skeletonModel.rotation.x = -Math.PI / 2;
       skeletonModel.updateMatrixWorld(true);
 
       const box = new THREE.Box3().setFromObject(skeletonModel);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      console.log("Skeleton raw bounds:", { center, size });
-      
       const maxDim = Math.max(size.x, size.y, size.z);
       baseScale = 2.0 / maxDim;
       baseCenter.copy(center);
 
       skeletonModel.scale.set(baseScale, baseScale, baseScale);
-      
       skeletonModel.position.x = -baseCenter.x * baseScale;
       skeletonModel.position.y = (-baseCenter.y * baseScale) + 1.0;
       skeletonModel.position.z = -baseCenter.z * baseScale;
@@ -124,6 +121,7 @@ function loadModels() {
         if (child.isMesh) {
           child.userData.system = 'skeleton';
           originalMaterials.set(child.uuid, child.material);
+          interactableModels.push(child);
         }
       });
 
@@ -139,11 +137,8 @@ function loadModels() {
     './models/muscles.glb',
     (gltf) => {
       muscleModel = gltf.scene;
-      
       muscleModel.rotation.x = -Math.PI / 2;
       muscleModel.updateMatrixWorld(true);
-
-      // Apply the exact same scale and center as the skeleton
       muscleModel.scale.set(baseScale, baseScale, baseScale);
       muscleModel.position.x = -baseCenter.x * baseScale;
       muscleModel.position.y = (-baseCenter.y * baseScale) + 1.0;
@@ -153,6 +148,7 @@ function loadModels() {
         if (child.isMesh) {
           child.userData.system = 'muscle';
           originalMaterials.set(child.uuid, child.material);
+          interactableModels.push(child);
         }
       });
 
@@ -171,25 +167,18 @@ function loadModels() {
     './models/vascular.glb',
     (gltf) => {
       vascularModel = gltf.scene;
-      
       const box = new THREE.Box3().setFromObject(vascularModel);
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
-      
-      // Vascular model is from HRA. It is Y-up already.
-      // We manually tune its scale to match the skeleton.
-      // A full skeleton is ~2.0 units tall. Vascular (head to groin) should be ~1.2 units tall.
       const vascularScale = (1.2 / maxDim);
       vascularModel.scale.set(vascularScale, vascularScale, vascularScale);
-      
-      // Position it correctly within the chest and abdomen
       vascularModel.position.set(0, 0.95, -0.03);
-      window.vascularModel = vascularModel;
       
       vascularModel.traverse((child) => {
         if (child.isMesh) {
           child.userData.system = 'vascular';
           originalMaterials.set(child.uuid, child.material);
+          interactableModels.push(child);
         }
       });
 
@@ -204,105 +193,60 @@ function loadModels() {
   );
 
   // 載入神經模型 (大腦與脊髓)
-  // 為了讓大腦精準落入顱腔 (約 Y=1.65~1.85) 且脊髓落入脊椎管 (約 Y=1.0~1.65)，
-  // 我們保持與血管相同的 HRA 原生縮放比例，但獨立調整高度偏移。
-  const hraScale = 1.2 / 0.871836645; // 1.376
+  const hraScale = 1.2 / 0.871836645;
   brainSpineModel.scale.set(hraScale, hraScale, hraScale);
-  brainSpineModel.rotation.y = 0; // 確保沒有錯誤的旋轉
-  brainSpineModel.position.set(0, 0.74, -0.03); // 高度 0.74，Z 軸 -0.03 使其落入脊椎管與顱腔
-  
+  brainSpineModel.position.set(0, 0.74, -0.03);
   scene.add(brainSpineModel);
-  const toggleBrainSpineCheckbox = document.getElementById('toggle-brain-spine');
-  brainSpineModel.visible = toggleBrainSpineCheckbox ? toggleBrainSpineCheckbox.checked : false;
 
-  loader.load(
-    './models/brain.glb',
-    (gltf) => {
-      const brain = gltf.scene;
-      
-      brain.traverse((child) => {
-        if (child.isMesh) {
-          child.userData.system = 'brain_spine';
-          originalMaterials.set(child.uuid, child.material);
-        }
-      });
-      brainSpineModel.add(brain);
-      checkAllLoaded();
-    },
-    undefined,
-    handleError
-  );
+  loader.load('./models/brain.glb', (gltf) => {
+    gltf.scene.traverse(c => { if(c.isMesh) { c.userData.system = 'brain_spine'; interactableModels.push(c); }});
+    brainSpineModel.add(gltf.scene);
+    checkAllLoaded();
+  });
 
-  loader.load(
-    './models/spinal_cord.glb',
-    (gltf) => {
-      const spinal = gltf.scene;
-      
-      spinal.traverse((child) => {
-        if (child.isMesh) {
-          child.userData.system = 'brain_spine';
-          originalMaterials.set(child.uuid, child.material);
-        }
-      });
-      brainSpineModel.add(spinal);
-      window.debugModels.brain_spine = brainSpineModel;
-      window.brainSpineModel = brainSpineModel;
-      checkAllLoaded();
-    },
-    undefined,
-    handleError
-  );
+  loader.load('./models/spinal_cord.glb', (gltf) => {
+    gltf.scene.traverse(c => { if(c.isMesh) { c.userData.system = 'brain_spine'; interactableModels.push(c); }});
+    brainSpineModel.add(gltf.scene);
+    checkAllLoaded();
+  });
+
+  // 載入周邊神經模型
+  loader.load('./models/peripheral_nerves.glb', (gltf) => {
+    peripheralNervesModel = gltf.scene;
+    peripheralNervesModel.scale.set(hraScale, hraScale, hraScale);
+    peripheralNervesModel.position.set(0, 0.74, -0.03);
+    peripheralNervesModel.traverse(c => { if(c.isMesh) { c.userData.system = 'peripheral_nerves'; interactableModels.push(c); }});
+    peripheralNervesModel.visible = false;
+    scene.add(peripheralNervesModel);
+    checkAllLoaded();
+  }, undefined, checkAllLoaded);
 }
 
-// 處理滑鼠移動 (Hover 效果)
 function onMouseMove(event) {
   const container = document.getElementById('canvas-container');
   const rect = container.getBoundingClientRect();
-  
   mouse.x = ((event.clientX - rect.left) / container.clientWidth) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / container.clientHeight) * 2 + 1;
 }
 
-// 處理點擊 (選取部位並開啟資訊卡)
 function onClick(event) {
   raycaster.setFromCamera(mouse, camera);
-  
-  const interactableModels = [];
-  if (muscleModel && muscleModel.visible) interactableModels.push(muscleModel);
-  if (skeletonModel && skeletonModel.visible) interactableModels.push(skeletonModel);
-  if (vascularModel && vascularModel.visible) interactableModels.push(vascularModel);
-  if (brainSpineModel && brainSpineModel.visible) interactableModels.push(brainSpineModel);
-  
-  if (interactableModels.length === 0) return;
-  
   const intersects = raycaster.intersectObjects(interactableModels, true);
-  
   if (intersects.length > 0) {
-    const object = intersects[0].object;
-    selectPart(object);
+    selectPart(intersects[0].object);
   } else {
-    // 點擊空白處關閉面板
     closeInfoPanel();
   }
 }
 
 function selectPart(mesh) {
-  // 還原上一個選取物件的材質
-  if (selectedMesh) {
-    selectedMesh.material = originalMaterials.get(selectedMesh.uuid);
-  }
-  
+  if (selectedMesh) selectedMesh.material = originalMaterials.get(selectedMesh.uuid) || selectedMesh.material;
   selectedMesh = mesh;
   selectedMesh.material = outlineMaterial.clone();
-
-  // 使用精確比對：mesh.name 即為骨頭/肌肉英文名稱
-  const systemType = mesh.userData.system || 'skeleton';
-  const data = window.getAnatomyData(mesh.name, systemType);
-
+  const data = window.getAnatomyData ? window.getAnatomyData(mesh.name, mesh.userData.system) : {system: mesh.userData.system, zh: mesh.name, en: mesh.name, desc: ''};
   showInfoPanel(data, mesh.name);
 }
 
-// UI 互動：資訊面板
 function showInfoPanel(data, rawName) {
   const panel = document.getElementById('info-panel');
   document.getElementById('info-system').innerText = data.system;
@@ -315,52 +259,30 @@ function showInfoPanel(data, rawName) {
 function closeInfoPanel() {
   document.getElementById('info-panel').classList.remove('open');
   if (selectedMesh) {
-    selectedMesh.material = originalMaterials.get(selectedMesh.uuid);
+    selectedMesh.material = originalMaterials.get(selectedMesh.uuid) || selectedMesh.material;
     selectedMesh = null;
   }
 }
 
-// UI 互動：側邊欄控制項
 function setupUIControls() {
-  // 關閉面板按鈕
   document.getElementById('close-info').addEventListener('click', closeInfoPanel);
+  document.getElementById('toggle-skeleton')?.addEventListener('change', e => { if(skeletonModel) skeletonModel.visible = e.target.checked; });
+  document.getElementById('toggle-muscle')?.addEventListener('change', e => { if(muscleModel) muscleModel.visible = e.target.checked; });
+  document.getElementById('toggle-vascular')?.addEventListener('change', e => { if(vascularModel) vascularModel.visible = e.target.checked; });
+  document.getElementById('toggle-brain-spine')?.addEventListener('change', e => { if(brainSpineModel) brainSpineModel.visible = e.target.checked; });
+  document.getElementById('toggle-nerve')?.addEventListener('change', e => { if(peripheralNervesModel) peripheralNervesModel.visible = e.target.checked; });
 
-  // 系統開關 (目前有骨骼與肌肉)
-  const toggleSkeleton = document.getElementById('toggle-skeleton');
-  toggleSkeleton.addEventListener('change', (e) => {
-    if (skeletonModel) skeletonModel.visible = e.target.checked;
-  });
-
-  const toggleMuscle = document.getElementById('toggle-muscle');
-  if (toggleMuscle) {
-    toggleMuscle.addEventListener('change', (e) => {
-      if (muscleModel) muscleModel.visible = e.target.checked;
-    });
-  }
-
-  const toggleVascular = document.getElementById('toggle-vascular');
-  if (toggleVascular) {
-    toggleVascular.addEventListener('change', (e) => {
-      if (vascularModel) vascularModel.visible = e.target.checked;
-    });
-  }
-
-  const toggleBrainSpine = document.getElementById('toggle-brain-spine');
-  if (toggleBrainSpine) {
-    toggleBrainSpine.addEventListener('change', (e) => {
-      if (brainSpineModel) brainSpineModel.visible = e.target.checked;
-    });
-  }
-
-  // 透明度滑桿
-  const opacitySlider = document.getElementById('opacity-slider');
-  opacitySlider.addEventListener('input', (e) => {
+  document.getElementById('opacity-slider')?.addEventListener('input', (e) => {
     const opacity = e.target.value / 100;
     
     const updateOpacity = (model) => {
       if (model) {
         model.traverse((child) => {
           if (child.isMesh) {
+            // 神經與大腦特殊處理：保持高透明度或發光
+            if (child.userData.system === 'brain_spine' || child.userData.system === 'peripheral_nerves') {
+              return; // 已在選取邏輯中處理，或直接保持預設透明
+            }
             const mat = originalMaterials.get(child.uuid);
             if (mat) {
               mat.transparent = true;
@@ -374,7 +296,7 @@ function setupUIControls() {
     updateOpacity(skeletonModel);
     updateOpacity(muscleModel);
     updateOpacity(vascularModel);
-    updateOpacity(brainSpineModel);
+    // brainSpineModel 和 peripheralNervesModel 可依需求設定
   });
 
   // 視角快捷鍵
@@ -383,7 +305,6 @@ function setupUIControls() {
       const view = e.target.dataset.view;
       const targetPos = new THREE.Vector3(0, 1, 0); // 中心點
       
-      // 使用 GSAP 或直接設定位置 (這裡用直接設定示範)
       switch(view) {
         case 'front': camera.position.set(0, 1.5, 5); break;
         case 'back':  camera.position.set(0, 1.5, -5); break;

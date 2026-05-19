@@ -132,12 +132,24 @@ window.ANATOMY_DATA = {
 // ===== 智慧後備函式 =====
 // 若模型 Mesh 名稱不在資料庫中，自動格式化英文名稱並推斷中文分類
 window.getAnatomyData = function(meshName, type = 'skeleton') {
-  const name = meshName.toLowerCase();
+  const meshNameLower = meshName.toLowerCase();
+  const name = meshNameLower;
   
   // 依照傳入的系統類型，選擇對應的資料庫
   const database = window.ANATOMY_DATA[type] || window.ANATOMY_DATA.skeleton;
   const data = database[name];
+  
   if (data) return data;
+
+  if (window.ANATOMY_DATA && window.ANATOMY_DATA.vascular && (meshNameLower.includes('vein') || meshNameLower.includes('artery') || meshNameLower.includes('vh_m_'))) {
+    console.log(`Fallback mapping to vascular for: ${meshName}`);
+    return window.ANATOMY_DATA.vascular['default'];
+  }
+  
+  if (window.ANATOMY_DATA && window.ANATOMY_DATA.peripheral_nerves && (meshNameLower.includes('nerve') || meshNameLower.includes('plexus'))) {
+    console.log(`Fallback mapping to peripheral_nerves for: ${meshName}`);
+    return window.ANATOMY_DATA.peripheral_nerves['default'];
+  }
 
   // 後備：將英文名稱格式化（首字母大寫，移除可能有的底線或雜訊）
   const cleanName = meshName.replace(/[_]/g, ' ');
@@ -195,6 +207,20 @@ window.getAnatomyData = function(meshName, type = 'skeleton') {
       en: displayName,
       system: system,
       desc: `${displayName} — 腦部與脊髓系統的重要構造，負責神經訊號的傳遞與處理。`
+    };
+  }
+  
+  // 周邊神經系統後備邏輯
+  if (type === 'peripheral_nerves') {
+    let system = "周邊神經系統";
+
+    let displayName = cleanName.replace(/\b\w/g, c => c.toUpperCase());
+
+    return {
+      zh: displayName,
+      en: displayName,
+      system: system,
+      desc: `${displayName} — 周邊神經系統的組成部分，負責傳遞感覺與運動訊號。`
     };
   }
 
