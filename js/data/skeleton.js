@@ -179,12 +179,12 @@ window.getAnatomyData = function(meshName, type = 'skeleton') {
     };
   }
 
-  // 神經系統後備邏輯
-  if (type === 'nerve') {
-    let system = "神經系統";
+  // 腦部與脊髓系統後備邏輯
+  if (type === 'brain_spine') {
+    let system = "腦部與脊髓系統";
     if (name.includes("brain") || name.includes("cerebrum") || name.includes("cerebellum")) system = "中樞神經 (腦)";
     else if (name.includes("spinal")) system = "中樞神經 (脊髓)";
-    else if (name.includes("nerve")) system = "周邊神經";
+    else if (name.includes("nerve")) system = "神經組織";
 
     // 神經名稱特例處理：移除 HRA 特定的前綴 (Allen, VH_M 等)
     let displayName = cleanName.replace(/^(3d allen m |vh m |3d vh m )/i, '');
@@ -194,7 +194,7 @@ window.getAnatomyData = function(meshName, type = 'skeleton') {
       zh: displayName,
       en: displayName,
       system: system,
-      desc: `${displayName} — 神經系統的重要構造，負責神經訊號的傳遞與處理。`
+      desc: `${displayName} — 腦部與脊髓系統的重要構造，負責神經訊號的傳遞與處理。`
     };
   }
 

@@ -4,8 +4,8 @@ let scene, camera, renderer, controls;
 let skeletonModel;
 let muscleModel;
 let vascularModel;
-let nerveModel = new THREE.Group();
-window.debugModels = { skeleton: null, muscle: null, vascular: null, nerve: null };
+let brainSpineModel = new THREE.Group();
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -207,12 +207,12 @@ function loadModels() {
   // 為了讓大腦精準落入顱腔 (約 Y=1.65~1.85) 且脊髓落入脊椎管 (約 Y=1.0~1.65)，
   // 我們保持與血管相同的 HRA 原生縮放比例，但獨立調整高度偏移。
   const hraScale = 1.2 / 0.871836645; // 1.376
-  nerveModel.scale.set(hraScale, hraScale, hraScale);
-  nerveModel.position.set(0, 0.615, -0.05); // Y=0.615 使大腦剛好在頭骨內，-0.05 貼齊脊柱
+  brainSpineModel.scale.set(hraScale, hraScale, hraScale);
+  brainSpineModel.position.set(0, 0.915, 0.0); // 向上提升 0.3 單位，並微調 Z 軸使其準確落入頭骨與脊椎內
   
-  scene.add(nerveModel);
-  const toggleNerveCheckbox = document.getElementById('toggle-nerve');
-  nerveModel.visible = toggleNerveCheckbox ? toggleNerveCheckbox.checked : false;
+  scene.add(brainSpineModel);
+  const toggleBrainSpineCheckbox = document.getElementById('toggle-brain-spine');
+  brainSpineModel.visible = toggleBrainSpineCheckbox ? toggleBrainSpineCheckbox.checked : false;
 
   loader.load(
     './models/brain.glb',
@@ -221,11 +221,11 @@ function loadModels() {
       
       brain.traverse((child) => {
         if (child.isMesh) {
-          child.userData.system = 'nerve';
+          child.userData.system = 'brain_spine';
           originalMaterials.set(child.uuid, child.material);
         }
       });
-      nerveModel.add(brain);
+      brainSpineModel.add(brain);
       checkAllLoaded();
     },
     undefined,
@@ -239,13 +239,13 @@ function loadModels() {
       
       spinal.traverse((child) => {
         if (child.isMesh) {
-          child.userData.system = 'nerve';
+          child.userData.system = 'brain_spine';
           originalMaterials.set(child.uuid, child.material);
         }
       });
-      nerveModel.add(spinal);
-      window.debugModels.nerve = nerveModel;
-      window.nerveModel = nerveModel;
+      brainSpineModel.add(spinal);
+      window.debugModels.brain_spine = brainSpineModel;
+      window.brainSpineModel = brainSpineModel;
       checkAllLoaded();
     },
     undefined,
@@ -270,7 +270,7 @@ function onClick(event) {
   if (muscleModel && muscleModel.visible) interactableModels.push(muscleModel);
   if (skeletonModel && skeletonModel.visible) interactableModels.push(skeletonModel);
   if (vascularModel && vascularModel.visible) interactableModels.push(vascularModel);
-  if (nerveModel && nerveModel.visible) interactableModels.push(nerveModel);
+  if (brainSpineModel && brainSpineModel.visible) interactableModels.push(brainSpineModel);
   
   if (interactableModels.length === 0) return;
   
@@ -344,10 +344,10 @@ function setupUIControls() {
     });
   }
 
-  const toggleNerve = document.getElementById('toggle-nerve');
-  if (toggleNerve) {
-    toggleNerve.addEventListener('change', (e) => {
-      if (nerveModel) nerveModel.visible = e.target.checked;
+  const toggleBrainSpine = document.getElementById('toggle-brain-spine');
+  if (toggleBrainSpine) {
+    toggleBrainSpine.addEventListener('change', (e) => {
+      if (brainSpineModel) brainSpineModel.visible = e.target.checked;
     });
   }
 
@@ -373,7 +373,7 @@ function setupUIControls() {
     updateOpacity(skeletonModel);
     updateOpacity(muscleModel);
     updateOpacity(vascularModel);
-    updateOpacity(nerveModel);
+    updateOpacity(brainSpineModel);
   });
 
   // 視角快捷鍵
