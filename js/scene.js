@@ -208,7 +208,7 @@ function loadModels() {
   // 我們保持與血管相同的 HRA 原生縮放比例，但獨立調整高度偏移。
   const hraScale = 1.2 / 0.871836645; // 1.376
   brainSpineModel.scale.set(hraScale, hraScale, hraScale);
-  brainSpineModel.position.set(0, 0.915, 0.0); // 向上提升 0.3 單位，並微調 Z 軸使其準確落入頭骨與脊椎內
+  brainSpineModel.position.set(0, 0.74, 0.04); // Z軸微調 0.04 使其向前移入頭骨
   
   scene.add(brainSpineModel);
   const toggleBrainSpineCheckbox = document.getElementById('toggle-brain-spine');
