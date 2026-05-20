@@ -363,10 +363,25 @@ function onClick(event) {
   // 從 scene.children 開始遞迴偵測，這樣才會尊重父節點 (Group) 的 visible 狀態
   const intersects = raycaster.intersectObjects(scene.children, true);
   
-  // 尋找第一個在 interactableModels 內，且不是完全透明的網格
+  // 尋找第一個在 interactableModels 內，且完全可見 (包含所有父層) 的網格
   const validIntersect = intersects.find(hit => {
     if (!interactableModels.includes(hit.object)) return false;
+    
+    // 嚴格檢查自己與所有父層是否隱藏
+    let isVisible = true;
+    let obj = hit.object;
+    while (obj) {
+      if (obj.visible === false) {
+        isVisible = false;
+        break;
+      }
+      obj = obj.parent;
+    }
+    if (!isVisible) return false;
+
+    // 如果透明度極低，也視為不可點擊
     if (hit.object.material && hit.object.material.opacity <= 0.05) return false;
+    
     return true;
   });
 
