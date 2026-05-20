@@ -83,6 +83,18 @@
           </div>
         </div>
 
+        <div class="system-control-group respiratory-group">
+          <label class="toggle-item respiratory-toggle">
+            <input type="checkbox" id="toggle-respiratory" />
+            <span class="toggle-label">🫁 呼吸系統 (Respiratory)</span>
+          </label>
+          <div class="opacity-row">
+            <span class="opacity-label">透明度</span>
+            <input type="range" class="system-opacity-slider" id="opacity-respiratory" min="0" max="100" value="100" />
+            <span class="opacity-value" id="opacity-respiratory-val">100%</span>
+          </div>
+        </div>
+
       </div>
 
       <div class="control-group">
@@ -131,6 +143,7 @@
   <script src="./js/data/muscles.js?v=5"></script>
   <script src="./js/data/vascular.js?v=5"></script>
   <script src="./js/data/brain_spine.js?v=5"></script>
-  <script src="./js/scene.js?v=5"></script>
+  <script src="./js/data/respiratory.js?v=1"></script>
+  <script src="./js/scene.js?v=6"></script>
 </body>
 </html>

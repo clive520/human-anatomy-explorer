@@ -5,8 +5,9 @@ let skeletonModel = null;
 let muscleModel = null;
 let vascularModel = null;
 let brainSpineModel = new THREE.Group();
+let respiratoryModel = null;
 let interactableModels = [];
-window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null };
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -86,7 +87,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 5) {
+    if (loadedCount >= 6) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -208,6 +209,52 @@ function loadModels() {
     brainSpineModel.add(gltf.scene);
     checkAllLoaded();
   });
+
+  // 載入呼吸系統模型 (Lung GLB 已包含氣管、支氣管、嗅部軟骨)
+  loader.load('./models/respiratory_lung.glb', (gltf) => {
+    respiratoryModel = gltf.scene;
+
+    // 自動縮放至骨骼相同的尺度系統
+    respiratoryModel.scale.set(hraScale, hraScale, hraScale);
+    respiratoryModel.position.set(0, 0.74, -0.03);
+
+    // 建立色彩映射：依網格名稱分配色彩
+    const lungColor     = new THREE.Color(0xF4A0B5); // 肉粉色 — 肺葉
+    const airwayColor   = new THREE.Color(0xA8D8EA); // 淡藍色 — 氣管/支氣管
+    const cartilageColor= new THREE.Color(0xE8E8D0); // 淡黃色 — 軟骨
+
+    respiratoryModel.traverse((child) => {
+      if (!child.isMesh) return;
+      child.userData.system = 'respiratory';
+
+      const n = child.name.toLowerCase();
+      let targetColor;
+      if (n.includes('cartilage') || n.includes('thyroid') || n.includes('cricoid') ||
+          n.includes('epiglottic') || n.includes('arytenoid') || n.includes('corniculate')) {
+        targetColor = cartilageColor;
+      } else if (n.includes('bronchus') || n.includes('bronchi') || n.includes('trachea') || n.includes('carina')) {
+        targetColor = airwayColor;
+      } else {
+        targetColor = lungColor;
+      }
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: targetColor,
+        transparent: true,
+        opacity: 0.82,
+        roughness: 0.5,
+        metalness: 0.05,
+      });
+      child.material = mat;
+      originalMaterials.set(child.uuid, mat);
+      interactableModels.push(child);
+    });
+
+    respiratoryModel.visible = false;
+    window.debugModels.respiratory = respiratoryModel;
+    scene.add(respiratoryModel);
+    checkAllLoaded();
+  }, undefined, (err) => { console.warn('呼吸系統載入失敗:', err); checkAllLoaded(); });
 }
 
 function onMouseMove(event) {
@@ -231,7 +278,14 @@ function selectPart(mesh) {
   if (selectedMesh) selectedMesh.material = originalMaterials.get(selectedMesh.uuid) || selectedMesh.material;
   selectedMesh = mesh;
   selectedMesh.material = outlineMaterial.clone();
-  const data = window.getAnatomyData ? window.getAnatomyData(mesh.name, mesh.userData.system) : {system: mesh.userData.system, zh: mesh.name, en: mesh.name, desc: ''};
+
+  let data;
+  if (mesh.userData.system === 'respiratory' && window.getRespiratoryData) {
+    data = window.getRespiratoryData(mesh.name);
+  } else {
+    data = window.getAnatomyData ? window.getAnatomyData(mesh.name, mesh.userData.system)
+                                 : { system: mesh.userData.system, zh: mesh.name, en: mesh.name, desc: '' };
+  }
   showInfoPanel(data, mesh.name);
 }
 
@@ -258,6 +312,7 @@ function setupUIControls() {
   document.getElementById('toggle-muscle')?.addEventListener('change', e => { if(muscleModel) muscleModel.visible = e.target.checked; });
   document.getElementById('toggle-vascular')?.addEventListener('change', e => { if(vascularModel) vascularModel.visible = e.target.checked; });
   document.getElementById('toggle-brain-spine')?.addEventListener('change', e => { if(brainSpineModel) brainSpineModel.visible = e.target.checked; });
+  document.getElementById('toggle-respiratory')?.addEventListener('change', e => { if(respiratoryModel) respiratoryModel.visible = e.target.checked; });
 
   // 各系統個別透明度控制
   function setSystemOpacity(model, opacity) {
@@ -275,10 +330,11 @@ function setupUIControls() {
   }
 
   const opacityConfigs = [
-    { sliderId: 'opacity-skeleton',   valId: 'opacity-skeleton-val',   getModel: () => skeletonModel },
-    { sliderId: 'opacity-muscle',     valId: 'opacity-muscle-val',     getModel: () => muscleModel },
-    { sliderId: 'opacity-vascular',   valId: 'opacity-vascular-val',   getModel: () => vascularModel },
-    { sliderId: 'opacity-brain-spine',valId: 'opacity-brain-spine-val',getModel: () => brainSpineModel },
+    { sliderId: 'opacity-skeleton',    valId: 'opacity-skeleton-val',    getModel: () => skeletonModel },
+    { sliderId: 'opacity-muscle',      valId: 'opacity-muscle-val',      getModel: () => muscleModel },
+    { sliderId: 'opacity-vascular',    valId: 'opacity-vascular-val',    getModel: () => vascularModel },
+    { sliderId: 'opacity-brain-spine', valId: 'opacity-brain-spine-val', getModel: () => brainSpineModel },
+    { sliderId: 'opacity-respiratory', valId: 'opacity-respiratory-val', getModel: () => respiratoryModel },
   ];
 
   opacityConfigs.forEach(({ sliderId, valId, getModel }) => {
