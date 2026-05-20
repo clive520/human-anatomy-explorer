@@ -198,6 +198,7 @@ function loadModels() {
   const hraScale = 1.2 / 0.871836645;
   brainSpineModel.scale.set(hraScale, hraScale, hraScale);
   brainSpineModel.position.set(0, 0.74, -0.03);
+  brainSpineModel.visible = false;
   scene.add(brainSpineModel);
 
   loader.load('./models/brain.glb', (gltf) => {
