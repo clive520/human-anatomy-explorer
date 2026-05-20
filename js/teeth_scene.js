@@ -107,9 +107,9 @@ function buildArch(teethList, isUpper, archA, archB, yBase) {
 
     (isUpper ? upperGroup : lowerGroup).add(toothGroup);
 
-    // 牙齦（Gum）— 小球在齒頸線處
+    // 牙齦（Gum）— 小扁球在齒頸線處
     const gumGeo = new THREE.SphereGeometry(
-      (TOOTH_CFG[type] || TOOTH_CFG.molar).crownBotR * 1.1,
+      (TOOTH_CFG[type] || TOOTH_CFG.molar).crownBotR * 0.7,
       8, 6
     );
     const gumMat = new THREE.MeshStandardMaterial({
@@ -117,7 +117,7 @@ function buildArch(teethList, isUpper, archA, archB, yBase) {
     });
     const gum = new THREE.Mesh(gumGeo, gumMat);
     gum.position.set(px, yBase, pz);
-    gum.scale.set(1.1, 0.5, 1.1);
+    gum.scale.set(1.0, 0.4, 1.0);
     (isUpper ? upperGroup : lowerGroup).add(gum);
   }
 }
@@ -129,7 +129,7 @@ function init() {
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.01, 100);
-  camera.position.set(0, 0.5, 1.2);
+  camera.position.set(0, 0.25, 0.95);
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
@@ -141,7 +141,7 @@ function init() {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.target.set(0, 0, 0.3);
+  controls.target.set(0, 0, 0.20);
   controls.minDistance = 0.1;
   controls.maxDistance = 3.0;
   controls.update();
@@ -154,10 +154,10 @@ function init() {
   dl2.position.set(-1, -1, -1); scene.add(dl2);
 
   // 建立上下顎牙弓
-  // Upper arch: a=0.32 (width), b=0.22 (depth), y=0.05 (上方)
-  buildArch(UPPER_TEETH, true,  0.32, 0.22,  0.06);
-  // Lower arch: slightly smaller, y=-0.06 (下方)
-  buildArch(LOWER_TEETH, false, 0.30, 0.20, -0.06);
+  // Upper arch: a=0.42 (寬), b=0.30 (深), y=0.15 (上方，與下顎保持足夠間距)
+  buildArch(UPPER_TEETH, true,  0.42, 0.30,  0.16);
+  // Lower arch: 稍小且稍窄（解剖上下顎比上顎窄）
+  buildArch(LOWER_TEETH, false, 0.38, 0.27, -0.16);
 
   scene.add(upperGroup);
   scene.add(lowerGroup);
@@ -231,10 +231,10 @@ function setupUIControls() {
 
   // 視角按鈕
   const VIEWS = {
-    front:  [0,    0.2,  1.2],
-    top:    [0,    1.2,  0.2],
-    bottom: [0,   -1.2,  0.2],
-    left:   [-1.2, 0.2,  0.3],
+    front:  [0,    0.1,  0.95],
+    top:    [0,    1.0,  0.25],
+    bottom: [0,   -1.0,  0.25],
+    left:   [-1.0, 0.1,  0.2],
   };
   document.querySelectorAll('.camera-views .btn').forEach(btn => {
     btn.addEventListener('click', () => {
