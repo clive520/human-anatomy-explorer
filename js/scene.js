@@ -359,9 +359,19 @@ function onMouseMove(event) {
 
 function onClick(event) {
   raycaster.setFromCamera(mouse, camera);
-  const intersects = raycaster.intersectObjects(interactableModels, true);
-  if (intersects.length > 0) {
-    selectPart(intersects[0].object);
+  
+  // 從 scene.children 開始遞迴偵測，這樣才會尊重父節點 (Group) 的 visible 狀態
+  const intersects = raycaster.intersectObjects(scene.children, true);
+  
+  // 尋找第一個在 interactableModels 內，且不是完全透明的網格
+  const validIntersect = intersects.find(hit => {
+    if (!interactableModels.includes(hit.object)) return false;
+    if (hit.object.material && hit.object.material.opacity <= 0.05) return false;
+    return true;
+  });
+
+  if (validIntersect) {
+    selectPart(validIntersect.object);
   } else {
     closeInfoPanel();
   }
