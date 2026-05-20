@@ -7,8 +7,9 @@ let vascularModel = null;
 let brainSpineModel = new THREE.Group();
 let respiratoryModel = null;
 let digestiveModel = new THREE.Group();
+let urinaryModel = new THREE.Group();
 let interactableModels = [];
-window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null, digestive: null };
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null, digestive: null, urinary: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -88,7 +89,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 12) {
+    if (loadedCount >= 17) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -296,6 +297,56 @@ function loadModels() {
   loadDigestiveGLB('./models/digestive_pancreas.glb');
   loadDigestiveGLB('./models/digestive_gallbladder.glb');
   loadDigestiveGLB('./models/digestive_biliary_tree.glb');
+
+  // 載入泌尿系統模型 (5 個 GLB 合併至同一 Group)
+  urinaryModel.scale.set(hraScale, hraScale, hraScale);
+  urinaryModel.position.set(0, 0.74, -0.03);
+  urinaryModel.visible = false;
+  window.debugModels.urinary = urinaryModel;
+  scene.add(urinaryModel);
+
+  // 泌尿器官色彩映射
+  const URINARY_COLORS = {
+    kidney_cortex: new THREE.Color(0xA0522D), // 赭石色 — 腎皮質
+    kidney_medulla:new THREE.Color(0x8B4513), // 鞍褐色 — 腎髓質 (錐體)
+    pelvis_calyx:  new THREE.Color(0xDEB887), // 實木色 — 腎盂/腎盞
+    ureter:        new THREE.Color(0xEEDD82), // 淡黃褐色 — 輸尿管
+    bladder:       new THREE.Color(0xFFDAB9), // 桃紅色 — 膀胱
+  };
+
+  function urinaryColor(name) {
+    const n = name.toLowerCase();
+    if (n.includes('pyramid') || n.includes('papilla')) return URINARY_COLORS.kidney_medulla;
+    if (n.includes('kidney') || n.includes('cortex') || n.includes('column')) return URINARY_COLORS.kidney_cortex;
+    if (n.includes('pelvis') || n.includes('calyx')) return URINARY_COLORS.pelvis_calyx;
+    if (n.includes('ureter')) return URINARY_COLORS.ureter;
+    if (n.includes('bladder')) return URINARY_COLORS.bladder;
+    return URINARY_COLORS.kidney_cortex;
+  }
+
+  function loadUrinaryGLB(path) {
+    loader.load(path, (gltf) => {
+      gltf.scene.traverse((child) => {
+        if (!child.isMesh) return;
+        child.userData.system = 'urinary';
+        const mat = new THREE.MeshStandardMaterial({
+          color: urinaryColor(child.name),
+          transparent: true, opacity: 0.9, roughness: 0.5, metalness: 0.05
+        });
+        child.material = mat;
+        originalMaterials.set(child.uuid, mat);
+        interactableModels.push(child);
+      });
+      urinaryModel.add(gltf.scene);
+      checkAllLoaded();
+    }, undefined, (err) => { console.warn('泌尿模型載入失敗:', path, err); checkAllLoaded(); });
+  }
+
+  loadUrinaryGLB('./models/urinary_kidney_l.glb');
+  loadUrinaryGLB('./models/urinary_kidney_r.glb');
+  loadUrinaryGLB('./models/urinary_ureter_l.glb');
+  loadUrinaryGLB('./models/urinary_ureter_r.glb');
+  loadUrinaryGLB('./models/urinary_bladder.glb');
 }
 
 function onMouseMove(event) {
@@ -325,6 +376,8 @@ function selectPart(mesh) {
     data = window.getRespiratoryData(mesh.name);
   } else if (mesh.userData.system === 'digestive' && window.getDigestiveData) {
     data = window.getDigestiveData(mesh.name);
+  } else if (mesh.userData.system === 'urinary' && window.getUrinaryData) {
+    data = window.getUrinaryData(mesh.name);
   } else {
     data = window.getAnatomyData ? window.getAnatomyData(mesh.name, mesh.userData.system)
                                  : { system: mesh.userData.system, zh: mesh.name, en: mesh.name, desc: '' };
@@ -357,6 +410,7 @@ function setupUIControls() {
   document.getElementById('toggle-brain-spine')?.addEventListener('change', e => { if(brainSpineModel) brainSpineModel.visible = e.target.checked; });
   document.getElementById('toggle-respiratory')?.addEventListener('change', e => { if(respiratoryModel) respiratoryModel.visible = e.target.checked; });
   document.getElementById('toggle-digestive')?.addEventListener('change', e => { if(digestiveModel) digestiveModel.visible = e.target.checked; });
+  document.getElementById('toggle-urinary')?.addEventListener('change', e => { if(urinaryModel) urinaryModel.visible = e.target.checked; });
 
   // 各系統個別透明度控制
   function setSystemOpacity(model, opacity) {
@@ -380,6 +434,7 @@ function setupUIControls() {
     { sliderId: 'opacity-brain-spine', valId: 'opacity-brain-spine-val', getModel: () => brainSpineModel },
     { sliderId: 'opacity-respiratory', valId: 'opacity-respiratory-val', getModel: () => respiratoryModel },
     { sliderId: 'opacity-digestive',   valId: 'opacity-digestive-val',   getModel: () => digestiveModel },
+    { sliderId: 'opacity-urinary',     valId: 'opacity-urinary-val',     getModel: () => urinaryModel },
   ];
 
   opacityConfigs.forEach(({ sliderId, valId, getModel }) => {
