@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>人體解剖 3D 探索器 - 眼睛模組</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/base.css?v=5" />
+  <link rel="stylesheet" href="./css/components.css?v=5" />
+  <link rel="stylesheet" href="./css/explorer.css?v=5" />
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="explorer-header glass-panel">
+    <a href="explorer.html" class="back-btn">← 返回全身探索器</a>
+    <div class="explorer-title">👁 眼睛特寫模組 (Eye Module)</div>
+    <div class="header-actions"></div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="explorer-layout">
+
+    <!-- Left Panel: System Controls -->
+    <aside class="sidebar left-panel glass-panel">
+      <h3>眼睛構造 (Structures)</h3>
+      <div class="controls-container">
+
+        <!-- 眼球本體 -->
+        <div class="system-control-group">
+          <label class="toggle-item">
+            <input type="checkbox" id="toggle-eyeball" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">👁 眼球本體（含角膜/視網膜/水晶體）</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-eyeball-val">100%</span></label>
+            <input type="range" id="opacity-eyeball" min="0" max="100" value="100" />
+          </div>
+        </div>
+
+        <!-- 眼外肌 -->
+        <div class="system-control-group">
+          <label class="toggle-item">
+            <input type="checkbox" id="toggle-muscles" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">💪 眼外肌（6條直肌＋斜肌）</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-muscles-val">100%</span></label>
+            <input type="range" id="opacity-muscles" min="0" max="100" value="100" />
+          </div>
+        </div>
+
+        <!-- 視神經 -->
+        <div class="system-control-group">
+          <label class="toggle-item">
+            <input type="checkbox" id="toggle-nerves" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">🧠 視神經（含硬腦膜鞘）</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-nerves-val">100%</span></label>
+            <input type="range" id="opacity-nerves" min="0" max="100" value="100" />
+          </div>
+        </div>
+
+      </div>
+
+      <div class="camera-views">
+        <button class="btn btn-outline" data-view="front">正視圖</button>
+        <button class="btn btn-outline" data-view="back">後視圖</button>
+        <button class="btn btn-outline" data-view="top">俯視圖</button>
+        <button class="btn btn-outline" data-view="left">側視圖</button>
+      </div>
+    </aside>
+
+    <!-- Center: 3D Viewport -->
+    <div id="canvas-container" class="canvas-container">
+      <div id="loading-overlay" class="loading-overlay glass-panel">
+        <div class="spinner"></div>
+        <p>正在載入眼睛高解析度模型...</p>
+      </div>
+    </div>
+
+    <!-- Right Panel: Information -->
+    <aside class="sidebar right-panel info-panel glass-panel" id="info-panel">
+      <div class="info-header">
+        <h2 id="info-system">眼睛</h2>
+        <button id="close-info" class="close-btn" title="關閉面板">&times;</button>
+      </div>
+      <div class="info-content">
+        <h3 id="info-title-zh">請點擊構造</h3>
+        <p id="info-title-en" class="subtitle-en"></p>
+        <div class="info-divider"></div>
+        <p id="info-description">在 3D 視窗中點擊任意部位，此處會顯示詳細的解剖學說明。</p>
+      </div>
+    </aside>
+
+  </main>
+
+  <script src="./js/data/eye.js?v=1"></script>
+  <script src="./js/eye_scene.js?v=1"></script>
+</body>
+</html>
