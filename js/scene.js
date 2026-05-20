@@ -375,6 +375,13 @@ function loadModels() {
         originalMaterials.set(child.uuid, mat);
         interactableModels.push(child);
       });
+      
+      // 修正 HuBMAP 脾臟模型預設位置錯誤的問題 (太低)
+      if (path.includes('spleen')) {
+        gltf.scene.position.set(-0.02, 0.16, -0.05); // 向上方(y)與後方(z)移動至肋骨下緣
+        gltf.scene.scale.set(0.8, 0.8, 0.8); // 稍微縮小以符合解剖比例
+      }
+      
       lymphaticModel.add(gltf.scene);
       checkAllLoaded();
     }, undefined, (err) => { console.warn('淋巴模型載入失敗:', path, err); checkAllLoaded(); });
