@@ -4,109 +4,121 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>人體解剖 3D 探索器 - 心臟模組</title>
-  <link rel="stylesheet" href="./style.css?v=2" />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/base.css?v=5" />
+  <link rel="stylesheet" href="./css/components.css?v=5" />
+  <link rel="stylesheet" href="./css/explorer.css?v=5" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
-  <!-- 載入中遮罩 -->
-  <div id="loading-overlay">
-    <div class="spinner"></div>
-    <p>正在載入心臟高解析度模型...</p>
-  </div>
+  <!-- Top Navigation -->
+  <header class="explorer-header glass-panel">
+    <a href="explorer.html" class="back-btn">← 返回全身探索器</a>
+    <div class="explorer-title">🫀 心臟特寫模組 (Heart Module)</div>
+    <div class="header-actions"></div>
+  </header>
 
-  <!-- 主視圖容器 -->
-  <div id="canvas-container"></div>
-
-  <!-- 導覽列 -->
-  <nav class="top-nav">
-    <div class="logo">🫀 心臟特寫模組 (Heart Module)</div>
-    <div class="nav-links">
-      <a href="./explorer.html" class="btn btn-outline">⬅ 返回全身探索器</a>
-    </div>
-  </nav>
-
-  <!-- 左側控制面板 (器官切換) -->
-  <aside class="control-panel">
-    <h2>心臟構造 (Structures)</h2>
-    <div class="controls-container">
-      
-      <!-- 心室與心房肌肉 -->
-      <div class="system-control-group myocardium-group">
-        <label class="toggle-item myocardium-toggle">
-          <input type="checkbox" id="toggle-myocardium" checked />
-          <span class="custom-checkbox"></span>
-          <span class="label-text">🥩 心室與心房肌肉 (Myocardium)</span>
-        </label>
-        <div class="opacity-slider-container">
-          <label>透明度：<span id="opacity-myocardium-val">100%</span></label>
-          <input type="range" id="opacity-myocardium" min="0" max="100" value="100" />
+  <!-- Main Workspace -->
+  <main class="explorer-layout">
+    
+    <!-- Left Panel: System Controls -->
+    <aside class="sidebar left-panel glass-panel">
+      <h3>心臟構造 (Structures)</h3>
+      <div class="controls-container">
+        
+        <!-- 心室與心房肌肉 -->
+        <div class="system-control-group myocardium-group">
+          <label class="toggle-item myocardium-toggle">
+            <input type="checkbox" id="toggle-myocardium" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">🥩 心房與心室肌肉</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-myocardium-val">100%</span></label>
+            <input type="range" id="opacity-myocardium" min="0" max="100" value="100" />
+          </div>
         </div>
+
+        <!-- 瓣膜與乳頭肌 -->
+        <div class="system-control-group valves-group">
+          <label class="toggle-item valves-toggle">
+            <input type="checkbox" id="toggle-valves" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">🚪 瓣膜與乳頭肌</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-valves-val">100%</span></label>
+            <input type="range" id="opacity-valves" min="0" max="100" value="100" />
+          </div>
+        </div>
+
+        <!-- 冠狀動靜脈 -->
+        <div class="system-control-group coronary-group">
+          <label class="toggle-item coronary-toggle">
+            <input type="checkbox" id="toggle-coronary" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">🩸 冠狀血管</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-coronary-val">100%</span></label>
+            <input type="range" id="opacity-coronary" min="0" max="100" value="100" />
+          </div>
+        </div>
+
+        <!-- 大血管 -->
+        <div class="system-control-group vessels-group">
+          <label class="toggle-item vessels-toggle">
+            <input type="checkbox" id="toggle-vessels" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">🫁 大血管</span>
+          </label>
+          <div class="opacity-slider-container">
+            <label>透明度：<span id="opacity-vessels-val">100%</span></label>
+            <input type="range" id="opacity-vessels" min="0" max="100" value="100" />
+          </div>
+        </div>
+
       </div>
 
-      <!-- 瓣膜與乳頭肌 -->
-      <div class="system-control-group valves-group">
-        <label class="toggle-item valves-toggle">
-          <input type="checkbox" id="toggle-valves" checked />
-          <span class="custom-checkbox"></span>
-          <span class="label-text">🚪 瓣膜與乳頭肌 (Valves)</span>
-        </label>
-        <div class="opacity-slider-container">
-          <label>透明度：<span id="opacity-valves-val">100%</span></label>
-          <input type="range" id="opacity-valves" min="0" max="100" value="100" />
-        </div>
+      <div class="camera-views">
+        <button class="btn btn-outline" data-view="front">正視圖</button>
+        <button class="btn btn-outline" data-view="back">後視圖</button>
+        <button class="btn btn-outline" data-view="top">俯視圖</button>
       </div>
+    </aside>
 
-      <!-- 冠狀動靜脈 -->
-      <div class="system-control-group coronary-group">
-        <label class="toggle-item coronary-toggle">
-          <input type="checkbox" id="toggle-coronary" checked />
-          <span class="custom-checkbox"></span>
-          <span class="label-text">🩸 冠狀血管 (Coronary Vessels)</span>
-        </label>
-        <div class="opacity-slider-container">
-          <label>透明度：<span id="opacity-coronary-val">100%</span></label>
-          <input type="range" id="opacity-coronary" min="0" max="100" value="100" />
-        </div>
+    <!-- Center: 3D Viewport -->
+    <div class="viewer-container">
+      <div id="loading-overlay" class="loading-overlay glass-panel">
+        <div class="spinner"></div>
+        <p>正在載入心臟高解析度模型...</p>
       </div>
+      <div id="canvas-container"></div>
+    </div>
 
-      <!-- 大血管 -->
-      <div class="system-control-group vessels-group">
-        <label class="toggle-item vessels-toggle">
-          <input type="checkbox" id="toggle-vessels" checked />
-          <span class="custom-checkbox"></span>
-          <span class="label-text">🫁 大血管 (Great Vessels)</span>
-        </label>
-        <div class="opacity-slider-container">
-          <label>透明度：<span id="opacity-vessels-val">100%</span></label>
-          <input type="range" id="opacity-vessels" min="0" max="100" value="100" />
-        </div>
+    <!-- Right Panel: Information -->
+    <aside class="sidebar right-panel info-panel glass-panel" id="info-panel">
+      <div class="info-header">
+        <h2 id="info-system">心臟</h2>
+        <button id="close-info" class="close-btn" title="關閉面板">&times;</button>
       </div>
-
-    </div>
-
-    <div class="camera-views">
-      <button class="btn btn-outline" data-view="front">正視圖</button>
-      <button class="btn btn-outline" data-view="back">後視圖</button>
-      <button class="btn btn-outline" data-view="top">俯視圖</button>
-    </div>
-  </aside>
-
-  <!-- 右側資訊面板 (點擊後顯示) -->
-  <aside class="info-panel" id="info-panel">
-    <div class="info-header">
-      <h2 id="info-system">心臟</h2>
-      <button id="close-info" class="close-btn">&times;</button>
-    </div>
-    <div class="info-content">
-      <h3 id="info-title-zh">請點擊器官</h3>
-      <p id="info-title-en" class="subtitle"></p>
-      <div class="divider"></div>
-      <p id="info-description">在 3D 視窗中點擊任意部位，此處會顯示詳細的解剖學說明。</p>
-    </div>
-  </aside>
+      <div class="info-content">
+        <h3 id="info-title-zh">請點擊器官</h3>
+        <p id="info-title-en" class="subtitle-en"></p>
+        <div class="info-divider"></div>
+        <p id="info-description">在 3D 視窗中點擊任意部位，此處會顯示詳細的解剖學說明。</p>
+      </div>
+    </aside>
+    
+  </main>
 
   <!-- 載入資料庫與邏輯腳本 -->
   <script src="./js/data/heart.js?v=1"></script>
