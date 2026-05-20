@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>人體解剖 3D 探索器 - 牙齒模組</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/base.css?v=5" />
+  <link rel="stylesheet" href="./css/components.css?v=5" />
+  <link rel="stylesheet" href="./css/explorer.css?v=5" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="explorer-header glass-panel">
+    <a href="explorer.html" class="back-btn">← 返回全身探索器</a>
+    <div class="explorer-title">🦷 牙齒特寫模組 (Teeth Module)</div>
+    <div class="header-actions"></div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="explorer-layout">
+
+    <!-- Left Panel -->
+    <aside class="sidebar left-panel glass-panel">
+      <h3>牙列控制 (Dental Arch)</h3>
+      <div class="controls-container">
+
+        <div class="system-control-group">
+          <label class="toggle-item">
+            <input type="checkbox" id="toggle-upper" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">⬆ 上顎牙列（Maxillary, #1–#16）</span>
+          </label>
+        </div>
+
+        <div class="system-control-group">
+          <label class="toggle-item">
+            <input type="checkbox" id="toggle-lower" checked />
+            <span class="custom-checkbox"></span>
+            <span class="label-text">⬇ 下顎牙列（Mandibular, #17–#32）</span>
+          </label>
+        </div>
+
+      </div>
+
+      <!-- 牙型圖例 -->
+      <div style="margin-top: 1rem;">
+        <h3>牙型圖例</h3>
+        <div style="font-size:0.82rem; color:var(--color-text-muted); line-height:1.9;">
+          <div>● <span style="color:#FFF5DC;">█</span> 中門齒 / 側門齒 — 切割</div>
+          <div>● <span style="color:#FFF8E0;">█</span> 犬齒（虎牙）— 撕裂</div>
+          <div>● <span style="color:#FFF0CC;">█</span> 小臼齒 — 研磨＋切割</div>
+          <div>● <span style="color:#FFE8B0;">█</span> 大臼齒 — 研磨</div>
+        </div>
+        <p style="font-size:0.8rem; color:var(--color-text-muted); margin-top:0.8rem;">
+          📌 共 32 顆恆牙（程序化生成）<br>
+          齒根（黃色）顯示於牙冠上/下方
+        </p>
+      </div>
+
+      <div class="camera-views">
+        <button class="btn btn-outline" data-view="front">正面</button>
+        <button class="btn btn-outline" data-view="top">上方</button>
+        <button class="btn btn-outline" data-view="bottom">下方</button>
+        <button class="btn btn-outline" data-view="left">側面</button>
+      </div>
+    </aside>
+
+    <!-- Center: 3D Viewport -->
+    <div id="canvas-container" class="canvas-container">
+      <div id="loading-overlay" class="loading-overlay glass-panel">
+        <div class="spinner"></div>
+        <p>正在生成牙列模型...</p>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <aside class="sidebar right-panel info-panel glass-panel" id="info-panel">
+      <div class="info-header">
+        <h2 id="info-system">牙齒</h2>
+        <button id="close-info" class="close-btn" title="關閉面板">&times;</button>
+      </div>
+      <div class="info-content">
+        <p id="info-tooth-num" style="font-size:0.85rem; color:var(--color-accent); margin:0 0 0.3rem;">請點擊牙齒</p>
+        <h3 id="info-title-zh">在 3D 視窗中點擊任意一顆牙齒</h3>
+        <p id="info-title-en" class="subtitle-en"></p>
+        <div class="info-divider"></div>
+        <p id="info-description">此處會顯示該牙齒的詳細解剖說明，包含萌出時間、齒根數目、功能與臨床意義。</p>
+      </div>
+    </aside>
+
+  </main>
+
+  <script src="./js/data/teeth.js?v=1"></script>
+  <script src="./js/teeth_scene.js?v=1"></script>
+</body>
+</html>
