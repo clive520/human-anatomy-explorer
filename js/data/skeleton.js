@@ -210,19 +210,8 @@ window.getAnatomyData = function(meshName, type = 'skeleton') {
     };
   }
   
-  // 周邊神經系統後備邏輯
-  if (type === 'peripheral_nerves') {
-    let system = "周邊神經系統";
 
-    let displayName = cleanName.replace(/\b\w/g, c => c.toUpperCase());
 
-    return {
-      zh: displayName,
-      en: displayName,
-      system: system,
-      desc: `${displayName} — 周邊神經系統的組成部分，負責傳遞感覺與運動訊號。`
-    };
-  }
 
   // 骨骼系統後備邏輯
   let system = "骨骼系統";

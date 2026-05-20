@@ -11,9 +11,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
   
   <!-- CSS -->
-  <link rel="stylesheet" href="./css/base.css?v=3" />
-  <link rel="stylesheet" href="./css/components.css?v=3" />
-  <link rel="stylesheet" href="./css/explorer.css?v=3" />
+  <link rel="stylesheet" href="./css/base.css?v=5" />
+  <link rel="stylesheet" href="./css/components.css?v=5" />
+  <link rel="stylesheet" href="./css/explorer.css?v=5" />
 </head>
 <body>
 
@@ -34,35 +34,55 @@
       <h3>系統圖層控制</h3>
       
       <div class="system-toggles">
-        <label class="toggle-item skeleton-toggle">
-          <input type="checkbox" id="toggle-skeleton" checked />
-          <span class="toggle-label">🦴 骨骼系統 (Skeleton)</span>
-        </label>
-        
-        <label class="toggle-item muscle-toggle">
-          <input type="checkbox" id="toggle-muscle" />
-          <span class="toggle-label">💪 肌肉系統 (Muscle)</span>
-        </label>
-        
-        <label class="toggle-item vessel-toggle">
-          <input type="checkbox" id="toggle-vascular" />
-          <span class="toggle-label">🫀 血管系統 (Vascular)</span>
-        </label>
-        
-        <label class="toggle-item brain-spine-toggle">
-          <input type="checkbox" id="toggle-brain-spine" />
-          <span class="toggle-label">🧠 腦部與脊髓 (Brain & Spine)</span>
-        </label>
-        
-        <label class="toggle-item nerve-toggle">
-          <input type="checkbox" id="toggle-nerve" />
-          <span class="toggle-label">🕸️ 周邊神經 (Nerves)</span>
-        </label>
-      </div>
 
-      <div class="control-group">
-        <label for="opacity-slider">整體透明度</label>
-        <input type="range" id="opacity-slider" min="0" max="100" value="100" />
+        <div class="system-control-group skeleton-group">
+          <label class="toggle-item skeleton-toggle">
+            <input type="checkbox" id="toggle-skeleton" checked />
+            <span class="toggle-label">🦴 骨骼系統 (Skeleton)</span>
+          </label>
+          <div class="opacity-row">
+            <span class="opacity-label">透明度</span>
+            <input type="range" class="system-opacity-slider" id="opacity-skeleton" min="0" max="100" value="100" />
+            <span class="opacity-value" id="opacity-skeleton-val">100%</span>
+          </div>
+        </div>
+
+        <div class="system-control-group muscle-group">
+          <label class="toggle-item muscle-toggle">
+            <input type="checkbox" id="toggle-muscle" />
+            <span class="toggle-label">💪 肌肉系統 (Muscle)</span>
+          </label>
+          <div class="opacity-row">
+            <span class="opacity-label">透明度</span>
+            <input type="range" class="system-opacity-slider" id="opacity-muscle" min="0" max="100" value="100" />
+            <span class="opacity-value" id="opacity-muscle-val">100%</span>
+          </div>
+        </div>
+
+        <div class="system-control-group vessel-group">
+          <label class="toggle-item vessel-toggle">
+            <input type="checkbox" id="toggle-vascular" />
+            <span class="toggle-label">🫀 血管系統 (Vascular)</span>
+          </label>
+          <div class="opacity-row">
+            <span class="opacity-label">透明度</span>
+            <input type="range" class="system-opacity-slider" id="opacity-vascular" min="0" max="100" value="100" />
+            <span class="opacity-value" id="opacity-vascular-val">100%</span>
+          </div>
+        </div>
+
+        <div class="system-control-group brain-spine-group">
+          <label class="toggle-item brain-spine-toggle">
+            <input type="checkbox" id="toggle-brain-spine" />
+            <span class="toggle-label">🧠 腦部與脊髓 (Brain &amp; Spine)</span>
+          </label>
+          <div class="opacity-row">
+            <span class="opacity-label">透明度</span>
+            <input type="range" class="system-opacity-slider" id="opacity-brain-spine" min="0" max="100" value="100" />
+            <span class="opacity-value" id="opacity-brain-spine-val">100%</span>
+          </div>
+        </div>
+
       </div>
 
       <div class="control-group">
@@ -107,11 +127,10 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   
   <!-- Application Scripts -->
-  <script src="./js/data/skeleton.js?v=3"></script>
-  <script src="./js/data/muscles.js?v=3"></script>
-  <script src="./js/data/vascular.js?v=4"></script>
-  <script src="./js/data/brain_spine.js?v=4"></script>
-  <script src="./js/data/peripheral_nerves.js?v=4"></script>
-  <script src="./js/scene.js?v=4"></script>
+  <script src="./js/data/skeleton.js?v=5"></script>
+  <script src="./js/data/muscles.js?v=5"></script>
+  <script src="./js/data/vascular.js?v=5"></script>
+  <script src="./js/data/brain_spine.js?v=5"></script>
+  <script src="./js/scene.js?v=5"></script>
 </body>
 </html>

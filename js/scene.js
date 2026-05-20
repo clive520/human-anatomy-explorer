@@ -5,9 +5,8 @@ let skeletonModel = null;
 let muscleModel = null;
 let vascularModel = null;
 let brainSpineModel = new THREE.Group();
-let peripheralNervesModel = null;
 let interactableModels = [];
-window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, peripheral_nerves: null };
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -87,7 +86,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 6) {
+    if (loadedCount >= 5) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -209,17 +208,6 @@ function loadModels() {
     brainSpineModel.add(gltf.scene);
     checkAllLoaded();
   });
-
-  // 載入周邊神經模型
-  loader.load('./models/peripheral_nerves.glb', (gltf) => {
-    peripheralNervesModel = gltf.scene;
-    peripheralNervesModel.scale.set(hraScale, hraScale, hraScale);
-    peripheralNervesModel.position.set(0, 0.74, -0.03);
-    peripheralNervesModel.traverse(c => { if(c.isMesh) { c.userData.system = 'peripheral_nerves'; interactableModels.push(c); }});
-    peripheralNervesModel.visible = false;
-    scene.add(peripheralNervesModel);
-    checkAllLoaded();
-  }, undefined, checkAllLoaded);
 }
 
 function onMouseMove(event) {
@@ -270,33 +258,38 @@ function setupUIControls() {
   document.getElementById('toggle-muscle')?.addEventListener('change', e => { if(muscleModel) muscleModel.visible = e.target.checked; });
   document.getElementById('toggle-vascular')?.addEventListener('change', e => { if(vascularModel) vascularModel.visible = e.target.checked; });
   document.getElementById('toggle-brain-spine')?.addEventListener('change', e => { if(brainSpineModel) brainSpineModel.visible = e.target.checked; });
-  document.getElementById('toggle-nerve')?.addEventListener('change', e => { if(peripheralNervesModel) peripheralNervesModel.visible = e.target.checked; });
 
-  document.getElementById('opacity-slider')?.addEventListener('input', (e) => {
-    const opacity = e.target.value / 100;
-    
-    const updateOpacity = (model) => {
-      if (model) {
-        model.traverse((child) => {
-          if (child.isMesh) {
-            // 神經與大腦特殊處理：保持高透明度或發光
-            if (child.userData.system === 'brain_spine' || child.userData.system === 'peripheral_nerves') {
-              return; // 已在選取邏輯中處理，或直接保持預設透明
-            }
-            const mat = originalMaterials.get(child.uuid);
-            if (mat) {
-              mat.transparent = true;
-              mat.opacity = opacity;
-            }
-          }
-        });
+  // 各系統個別透明度控制
+  function setSystemOpacity(model, opacity) {
+    if (!model) return;
+    model.traverse((child) => {
+      if (child.isMesh) {
+        const mat = originalMaterials.get(child.uuid);
+        if (mat) {
+          mat.transparent = opacity < 1.0;
+          mat.opacity = opacity;
+          mat.needsUpdate = true;
+        }
       }
-    };
-    
-    updateOpacity(skeletonModel);
-    updateOpacity(muscleModel);
-    updateOpacity(vascularModel);
-    // brainSpineModel 和 peripheralNervesModel 可依需求設定
+    });
+  }
+
+  const opacityConfigs = [
+    { sliderId: 'opacity-skeleton',   valId: 'opacity-skeleton-val',   getModel: () => skeletonModel },
+    { sliderId: 'opacity-muscle',     valId: 'opacity-muscle-val',     getModel: () => muscleModel },
+    { sliderId: 'opacity-vascular',   valId: 'opacity-vascular-val',   getModel: () => vascularModel },
+    { sliderId: 'opacity-brain-spine',valId: 'opacity-brain-spine-val',getModel: () => brainSpineModel },
+  ];
+
+  opacityConfigs.forEach(({ sliderId, valId, getModel }) => {
+    const slider = document.getElementById(sliderId);
+    const valDisplay = document.getElementById(valId);
+    if (!slider) return;
+    slider.addEventListener('input', (e) => {
+      const pct = parseInt(e.target.value, 10);
+      if (valDisplay) valDisplay.textContent = pct + '%';
+      setSystemOpacity(getModel(), pct / 100);
+    });
   });
 
   // 視角快捷鍵
