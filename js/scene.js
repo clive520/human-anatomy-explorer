@@ -6,8 +6,9 @@ let muscleModel = null;
 let vascularModel = null;
 let brainSpineModel = new THREE.Group();
 let respiratoryModel = null;
+let digestiveModel = new THREE.Group();
 let interactableModels = [];
-window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null };
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null, digestive: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -87,7 +88,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 6) {
+    if (loadedCount >= 12) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -210,23 +211,17 @@ function loadModels() {
     checkAllLoaded();
   });
 
-  // 載入呼吸系統模型 (Lung GLB 已包含氣管、支氣管、嗅部軟骨)
+  // 載入呼吸系統模型
   loader.load('./models/respiratory_lung.glb', (gltf) => {
     respiratoryModel = gltf.scene;
-
-    // 自動縮放至骨骼相同的尺度系統
     respiratoryModel.scale.set(hraScale, hraScale, hraScale);
     respiratoryModel.position.set(0, 0.74, -0.03);
-
-    // 建立色彩映射：依網格名稱分配色彩
-    const lungColor     = new THREE.Color(0xF4A0B5); // 肉粉色 — 肺葉
-    const airwayColor   = new THREE.Color(0xA8D8EA); // 淡藍色 — 氣管/支氣管
-    const cartilageColor= new THREE.Color(0xE8E8D0); // 淡黃色 — 軟骨
-
+    const lungColor      = new THREE.Color(0xF4A0B5);
+    const airwayColor    = new THREE.Color(0xA8D8EA);
+    const cartilageColor = new THREE.Color(0xE8E8D0);
     respiratoryModel.traverse((child) => {
       if (!child.isMesh) return;
       child.userData.system = 'respiratory';
-
       const n = child.name.toLowerCase();
       let targetColor;
       if (n.includes('cartilage') || n.includes('thyroid') || n.includes('cricoid') ||
@@ -237,24 +232,70 @@ function loadModels() {
       } else {
         targetColor = lungColor;
       }
-
-      const mat = new THREE.MeshStandardMaterial({
-        color: targetColor,
-        transparent: true,
-        opacity: 0.82,
-        roughness: 0.5,
-        metalness: 0.05,
-      });
+      const mat = new THREE.MeshStandardMaterial({ color: targetColor, transparent: true, opacity: 0.82, roughness: 0.5, metalness: 0.05 });
       child.material = mat;
       originalMaterials.set(child.uuid, mat);
       interactableModels.push(child);
     });
-
     respiratoryModel.visible = false;
     window.debugModels.respiratory = respiratoryModel;
     scene.add(respiratoryModel);
     checkAllLoaded();
   }, undefined, (err) => { console.warn('呼吸系統載入失敗:', err); checkAllLoaded(); });
+
+  // 載入消化系統模型 (6 個 GLB 合並至同一 Group)
+  digestiveModel.scale.set(hraScale, hraScale, hraScale);
+  digestiveModel.position.set(0, 0.74, -0.03);
+  digestiveModel.visible = false;
+  window.debugModels.digestive = digestiveModel;
+  scene.add(digestiveModel);
+
+  // 消化器官色彩映射
+  const DIGESTIVE_COLORS = {
+    liver:        new THREE.Color(0xC0392B), // 深紅袒 — 肝臟
+    ligament:     new THREE.Color(0xA93226), // 暗紅 — 韓帶
+    intestine_sm: new THREE.Color(0xE8A87C), // 涩橙 — 小腸
+    intestine_lg: new THREE.Color(0xD4825A), // 深橘褐 — 大腸
+    pancreas:     new THREE.Color(0xF5CBA7), // 淡橙黃 — 胰臟
+    gallbladder:  new THREE.Color(0x82C341), // 草綠 — 膽囊
+    bile:         new THREE.Color(0xF0C030), // 黃金 — 膽道
+  };
+
+  function digestiveColor(name) {
+    const n = name.toLowerCase();
+    if (n.includes('ligament') || n.includes('falciform') || n.includes('coronary') || n.includes('venosum') || n.includes('round_ligament')) return DIGESTIVE_COLORS.ligament;
+    if (n.includes('liver') || n.includes('hepat') || n.includes('lobe') || n.includes('segment') || n.includes('porta') || n.includes('bare_area') || n.includes('caudate') || n.includes('quadrate') || n.includes('diaphragmatic') || n.includes('impression') || n.includes('capsule')) return DIGESTIVE_COLORS.liver;
+    if (n.includes('bile') || n.includes('biliary') || n.includes('cystic_duct') || n.includes('hepatic_duct') || n.includes('common_hepatic') || n.includes('common_bile') || n.includes('ampulla') || n.includes('sphincter') || n.includes('pancreatic_duct')) return DIGESTIVE_COLORS.bile;
+    if (n.includes('gallbladder')) return DIGESTIVE_COLORS.gallbladder;
+    if (n.includes('pancreas') || n.includes('pancreatic')) return DIGESTIVE_COLORS.pancreas;
+    if (n.includes('colon') || n.includes('rectum') || n.includes('caecum') || n.includes('appendix') || n.includes('ileocecal') || n.includes('sigmoid') || n.includes('transverse') || n.includes('ascending') || n.includes('descending') || n.includes('flexure')) return DIGESTIVE_COLORS.intestine_lg;
+    return DIGESTIVE_COLORS.intestine_sm; // 小腸、十二指腸 預設
+  }
+
+  function loadDigestiveGLB(path) {
+    loader.load(path, (gltf) => {
+      gltf.scene.traverse((child) => {
+        if (!child.isMesh) return;
+        child.userData.system = 'digestive';
+        const mat = new THREE.MeshStandardMaterial({
+          color: digestiveColor(child.name),
+          transparent: true, opacity: 0.88, roughness: 0.6, metalness: 0.0
+        });
+        child.material = mat;
+        originalMaterials.set(child.uuid, mat);
+        interactableModels.push(child);
+      });
+      digestiveModel.add(gltf.scene);
+      checkAllLoaded();
+    }, undefined, (err) => { console.warn('消化模型載入失敗:', path, err); checkAllLoaded(); });
+  }
+
+  loadDigestiveGLB('./models/digestive_liver.glb');
+  loadDigestiveGLB('./models/digestive_small_intestine.glb');
+  loadDigestiveGLB('./models/digestive_large_intestine.glb');
+  loadDigestiveGLB('./models/digestive_pancreas.glb');
+  loadDigestiveGLB('./models/digestive_gallbladder.glb');
+  loadDigestiveGLB('./models/digestive_biliary_tree.glb');
 }
 
 function onMouseMove(event) {
@@ -282,6 +323,8 @@ function selectPart(mesh) {
   let data;
   if (mesh.userData.system === 'respiratory' && window.getRespiratoryData) {
     data = window.getRespiratoryData(mesh.name);
+  } else if (mesh.userData.system === 'digestive' && window.getDigestiveData) {
+    data = window.getDigestiveData(mesh.name);
   } else {
     data = window.getAnatomyData ? window.getAnatomyData(mesh.name, mesh.userData.system)
                                  : { system: mesh.userData.system, zh: mesh.name, en: mesh.name, desc: '' };
@@ -313,6 +356,7 @@ function setupUIControls() {
   document.getElementById('toggle-vascular')?.addEventListener('change', e => { if(vascularModel) vascularModel.visible = e.target.checked; });
   document.getElementById('toggle-brain-spine')?.addEventListener('change', e => { if(brainSpineModel) brainSpineModel.visible = e.target.checked; });
   document.getElementById('toggle-respiratory')?.addEventListener('change', e => { if(respiratoryModel) respiratoryModel.visible = e.target.checked; });
+  document.getElementById('toggle-digestive')?.addEventListener('change', e => { if(digestiveModel) digestiveModel.visible = e.target.checked; });
 
   // 各系統個別透明度控制
   function setSystemOpacity(model, opacity) {
@@ -335,6 +379,7 @@ function setupUIControls() {
     { sliderId: 'opacity-vascular',    valId: 'opacity-vascular-val',    getModel: () => vascularModel },
     { sliderId: 'opacity-brain-spine', valId: 'opacity-brain-spine-val', getModel: () => brainSpineModel },
     { sliderId: 'opacity-respiratory', valId: 'opacity-respiratory-val', getModel: () => respiratoryModel },
+    { sliderId: 'opacity-digestive',   valId: 'opacity-digestive-val',   getModel: () => digestiveModel },
   ];
 
   opacityConfigs.forEach(({ sliderId, valId, getModel }) => {
