@@ -8,8 +8,9 @@ let brainSpineModel = new THREE.Group();
 let respiratoryModel = null;
 let digestiveModel = new THREE.Group();
 let urinaryModel = new THREE.Group();
+let lymphaticModel = new THREE.Group();
 let interactableModels = [];
-window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null, digestive: null, urinary: null };
+window.debugModels = { skeleton: null, muscle: null, vascular: null, brain_spine: null, respiratory: null, digestive: null, urinary: null, lymphatic: null };
 let raycaster, mouse;
 let hoveredMesh = null;
 let selectedMesh = null;
@@ -89,7 +90,7 @@ function loadModels() {
 
   const checkAllLoaded = () => {
     loadedCount++;
-    if (loadedCount >= 17) {
+    if (loadedCount >= 19) {
       document.getElementById('loading-overlay').style.display = 'none';
     }
   };
@@ -347,6 +348,40 @@ function loadModels() {
   loadUrinaryGLB('./models/urinary_ureter_l.glb');
   loadUrinaryGLB('./models/urinary_ureter_r.glb');
   loadUrinaryGLB('./models/urinary_bladder.glb');
+
+  // 載入淋巴/免疫系統模型 (2 個 GLB 合併至同一 Group)
+  lymphaticModel.scale.set(hraScale, hraScale, hraScale);
+  lymphaticModel.position.set(0, 0.74, -0.03);
+  lymphaticModel.visible = false;
+  window.debugModels.lymphatic = lymphaticModel;
+  scene.add(lymphaticModel);
+
+  const LYMPHATIC_COLORS = {
+    spleen: new THREE.Color(0x800080), // 紫紅色 — 脾臟
+    thymus: new THREE.Color(0xFFE4E1), // 淺粉色 — 胸腺
+  };
+
+  function loadLymphaticGLB(path) {
+    loader.load(path, (gltf) => {
+      gltf.scene.traverse((child) => {
+        if (!child.isMesh) return;
+        child.userData.system = 'lymphatic';
+        const isSpleen = child.name.toLowerCase().includes('spleen');
+        const mat = new THREE.MeshStandardMaterial({
+          color: isSpleen ? LYMPHATIC_COLORS.spleen : LYMPHATIC_COLORS.thymus,
+          transparent: true, opacity: 0.9, roughness: 0.7, metalness: 0.05
+        });
+        child.material = mat;
+        originalMaterials.set(child.uuid, mat);
+        interactableModels.push(child);
+      });
+      lymphaticModel.add(gltf.scene);
+      checkAllLoaded();
+    }, undefined, (err) => { console.warn('淋巴模型載入失敗:', path, err); checkAllLoaded(); });
+  }
+
+  loadLymphaticGLB('./models/lymphatic_spleen.glb');
+  loadLymphaticGLB('./models/lymphatic_thymus.glb');
 }
 
 function onMouseMove(event) {
@@ -378,6 +413,8 @@ function selectPart(mesh) {
     data = window.getDigestiveData(mesh.name);
   } else if (mesh.userData.system === 'urinary' && window.getUrinaryData) {
     data = window.getUrinaryData(mesh.name);
+  } else if (mesh.userData.system === 'lymphatic' && window.getLymphaticData) {
+    data = window.getLymphaticData(mesh.name);
   } else {
     data = window.getAnatomyData ? window.getAnatomyData(mesh.name, mesh.userData.system)
                                  : { system: mesh.userData.system, zh: mesh.name, en: mesh.name, desc: '' };
@@ -411,6 +448,7 @@ function setupUIControls() {
   document.getElementById('toggle-respiratory')?.addEventListener('change', e => { if(respiratoryModel) respiratoryModel.visible = e.target.checked; });
   document.getElementById('toggle-digestive')?.addEventListener('change', e => { if(digestiveModel) digestiveModel.visible = e.target.checked; });
   document.getElementById('toggle-urinary')?.addEventListener('change', e => { if(urinaryModel) urinaryModel.visible = e.target.checked; });
+  document.getElementById('toggle-lymphatic')?.addEventListener('change', e => { if(lymphaticModel) lymphaticModel.visible = e.target.checked; });
 
   // 各系統個別透明度控制
   function setSystemOpacity(model, opacity) {
@@ -435,6 +473,7 @@ function setupUIControls() {
     { sliderId: 'opacity-respiratory', valId: 'opacity-respiratory-val', getModel: () => respiratoryModel },
     { sliderId: 'opacity-digestive',   valId: 'opacity-digestive-val',   getModel: () => digestiveModel },
     { sliderId: 'opacity-urinary',     valId: 'opacity-urinary-val',     getModel: () => urinaryModel },
+    { sliderId: 'opacity-lymphatic',   valId: 'opacity-lymphatic-val',   getModel: () => lymphaticModel },
   ];
 
   opacityConfigs.forEach(({ sliderId, valId, getModel }) => {
