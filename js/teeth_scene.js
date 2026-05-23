@@ -143,9 +143,9 @@ function onClick() {
   const meshName = mesh.name || '';
   const match = meshName.match(/Tooth_(\d+)/);
   
-  if (match && window.teethData) {
+  if (match && window.TEETH_INFO) {
     const id = parseInt(match[1]);
-    const toothInfo = window.teethData.find(t => t.id === id);
+    const toothInfo = window.TEETH_INFO[id];
     if (toothInfo) {
       document.getElementById('info-system').innerText = '牙齒模型';
       document.getElementById('info-tooth-num').innerText = `#${id}`;
