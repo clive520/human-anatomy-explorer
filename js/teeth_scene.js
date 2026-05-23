@@ -55,7 +55,7 @@ function loadModel() {
   const overlay = document.getElementById('loading-overlay');
   
   loader.load(
-    './assets/models/human_teeth.glb',
+    './assets/models/human_teeth_segmented.glb',
     function (gltf) {
       teethModel = gltf.scene;
       
@@ -139,14 +139,30 @@ function onClick() {
   mesh.material = highlightMat.clone();
   selectedMesh = mesh;
 
-  // 如果模型有名稱，可以嘗試解析牙位，否則顯示通用資訊
+  // 嘗試解析牙位 Tooth_1 ~ Tooth_32
   const meshName = mesh.name || '';
+  const match = meshName.match(/Tooth_(\d+)/);
   
+  if (match && window.teethData) {
+    const id = parseInt(match[1]);
+    const toothInfo = window.teethData.find(t => t.id === id);
+    if (toothInfo) {
+      document.getElementById('info-system').innerText = '牙齒模型';
+      document.getElementById('info-tooth-num').innerText = `#${id}`;
+      document.getElementById('info-title-zh').innerText = toothInfo.zh;
+      document.getElementById('info-title-en').innerText = toothInfo.en;
+      document.getElementById('info-description').innerText = toothInfo.desc;
+      document.getElementById('info-panel').classList.add('open');
+      return;
+    }
+  }
+  
+  //  fallback
   const data = { 
     system: '牙齒模型', 
-    zh: meshName || '選取的部位', 
+    zh: meshName === 'Gums' ? '牙齦' : (meshName || '選取的部位'), 
     en: '', 
-    desc: '這是一顆由真實 3D 掃描/建模生成的牙齒模型。由於是外部匯入的模型，目前無法自動分辨精確牙位。' 
+    desc: meshName === 'Gums' ? '支撐和保護牙齒的軟組織。' : '這是一顆由真實 3D 掃描生成的牙齒模型。' 
   };
   
   document.getElementById('info-system').innerText      = data.system;
@@ -181,6 +197,37 @@ function setupUIControls() {
       if (v) { camera.position.set(...v); controls.target.set(0, 0, 0); controls.update(); }
     });
   });
+
+  const toggleUpper = document.getElementById('toggle-upper');
+  const toggleLower = document.getElementById('toggle-lower');
+  
+  if (toggleUpper) {
+    toggleUpper.addEventListener('change', (e) => {
+      interactableObjects.forEach(mesh => {
+        const match = mesh.name.match(/Tooth_(\d+)/);
+        if (match) {
+          const id = parseInt(match[1]);
+          if (id >= 1 && id <= 16) {
+            mesh.visible = e.target.checked;
+          }
+        }
+      });
+    });
+  }
+
+  if (toggleLower) {
+    toggleLower.addEventListener('change', (e) => {
+      interactableObjects.forEach(mesh => {
+        const match = mesh.name.match(/Tooth_(\d+)/);
+        if (match) {
+          const id = parseInt(match[1]);
+          if (id >= 17 && id <= 32) {
+            mesh.visible = e.target.checked;
+          }
+        }
+      });
+    });
+  }
 }
 
 function onWindowResize() {
