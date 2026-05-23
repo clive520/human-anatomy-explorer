@@ -1,140 +1,23 @@
-// 牙齒 3D 場景（BoxGeometry 重製版）— v3
+// 牙齒 3D 場景（真實 3D 模型版）— v5
 
 let scene, camera, renderer, controls;
-let upperGroup = new THREE.Group();
-let lowerGroup = new THREE.Group();
-
+let teethModel = null;
 let interactableObjects = [];
 let raycaster, mouse;
-let selectedMeshes = [];
+let selectedMesh = null;
 const originalMaterials = new Map();
 
 const highlightMat = new THREE.MeshStandardMaterial({
-  color: 0x00d4ff, emissive: 0x00d4ff, emissiveIntensity: 0.4,
-  transparent: true, opacity: 0.80, roughness: 0.1
+  color: 0x00d4ff, emissive: 0x00d4ff, emissiveIntensity: 0.45,
+  transparent: true, opacity: 0.85, roughness: 0.1, wireframe: true
 });
 
-// ── 牙型參數 (單位 = Three.js units，約 1 unit = 10 mm) ─────
-// w = 近遠中寬, h = 冠高, d = 頰舌厚, rootH = 根長
-const TOOTH_SHAPES = {
-  central_incisor:  { w: 0.090, h: 0.100, d: 0.066, rootH: 0.00 },
-  lateral_incisor:  { w: 0.072, h: 0.090, d: 0.060, rootH: 0.00 },
-  canine:           { w: 0.080, h: 0.108, d: 0.070, rootH: 0.00 },
-  premolar:         { w: 0.086, h: 0.090, d: 0.086, rootH: 0.00 },
-  molar:            { w: 0.105, h: 0.082, d: 0.098, rootH: 0.00 },
-};
-
-// ── 牙齒顏色 ─────────────────────────────────────────────
-const CROWN_COLORS = {
-  central_incisor: new THREE.Color(0xFFFEF8),
-  lateral_incisor: new THREE.Color(0xFFFEF4),
-  canine:          new THREE.Color(0xFFFAE0),
-  premolar:        new THREE.Color(0xFFF5D8),
-  molar:           new THREE.Color(0xFFF0C8),
-};
-const GUM_COLOR = new THREE.Color(0xFF9EB0);
-
-// ── 牙列資料 ─────────────────────────────────────────────
-const UPPER_TEETH = [
-  { num:1,  type:'molar'          }, { num:2,  type:'molar'          },
-  { num:3,  type:'molar'          }, { num:4,  type:'premolar'       },
-  { num:5,  type:'premolar'       }, { num:6,  type:'canine'         },
-  { num:7,  type:'lateral_incisor'}, { num:8,  type:'central_incisor'},
-  { num:9,  type:'central_incisor'}, { num:10, type:'lateral_incisor'},
-  { num:11, type:'canine'         }, { num:12, type:'premolar'       },
-  { num:13, type:'premolar'       }, { num:14, type:'molar'          },
-  { num:15, type:'molar'          }, { num:16, type:'molar'          },
-];
-const LOWER_TEETH = [
-  { num:17, type:'molar'          }, { num:18, type:'molar'          },
-  { num:19, type:'molar'          }, { num:20, type:'premolar'       },
-  { num:21, type:'premolar'       }, { num:22, type:'canine'         },
-  { num:23, type:'lateral_incisor'}, { num:24, type:'central_incisor'},
-  { num:25, type:'central_incisor'}, { num:26, type:'lateral_incisor'},
-  { num:27, type:'canine'         }, { num:28, type:'premolar'       },
-  { num:29, type:'premolar'       }, { num:30, type:'molar'          },
-  { num:31, type:'molar'          }, { num:32, type:'molar'          },
-];
-
-// ── 建立單顆牙冠 (BoxGeometry) ────────────────────────────
-function buildCrown(type, toothNum, isUpper) {
-  const s = TOOTH_SHAPES[type] || TOOTH_SHAPES.molar;
-  const color = CROWN_COLORS[type] || new THREE.Color(0xFFFEF0);
-
-  // 牙冠本體 —— 梯形效果：頂部稍窄（齒頸），底部稍寬（咬合面）
-  // 用兩個略微縮放的 BoxGeometry 疊加模擬梯形
-  const crownGeo = new THREE.BoxGeometry(s.w, s.h, s.d);
-  const crownMat = new THREE.MeshStandardMaterial({
-    color, roughness: 0.08, metalness: 0.12,
-  });
-  const crown = new THREE.Mesh(crownGeo, crownMat);
-
-  // 上顎：冠朝下（-y），下顎：冠朝上（+y）
-  // 齒頸線 (CEJ) 在 y=0 處，冠從 0 往咬合方向延伸
-  crown.position.y = isUpper ? -(s.h / 2) : (s.h / 2);
-
-  crown.userData.toothNum = toothNum;
-  originalMaterials.set(crown.uuid, crownMat);
-  interactableObjects.push(crown);
-
-  return crown;
-}
-
-// ── 建立牙齦管（TubeGeometry，沿牙弓曲線） ─────────────────
-function buildGumTube(isUpper, archA, archB, yBase) {
-  const pts = [];
-  for (let i = 0; i <= 60; i++) {
-    const t = (i / 60) * Math.PI;
-    pts.push(new THREE.Vector3(-archA * Math.cos(t), yBase, archB * Math.sin(t)));
-  }
-  const curve  = new THREE.CatmullRomCurve3(pts);
-  const geo    = new THREE.TubeGeometry(curve, 60, 0.030, 10, false);
-  const mat    = new THREE.MeshStandardMaterial({ color: GUM_COLOR, roughness: 0.75, metalness: 0.0 });
-  return new THREE.Mesh(geo, mat);
-}
-
-// ── 建立整條牙弓 ──────────────────────────────────────────
-function buildArch(teethList, isUpper, archA, archB, yBase) {
-  const n = teethList.length; // 16
-
-  teethList.forEach(({ num, type }, i) => {
-    const t  = (i / (n - 1)) * Math.PI;
-    const px = -archA * Math.cos(t);
-    const pz =  archB * Math.sin(t);
-
-    const crown = buildCrown(type, num, isUpper);
-
-    // 讓牙冠面朝弓形外側
-    const rotY = Math.atan2(-Math.cos(t), Math.sin(t));
-    crown.position.set(px, yBase, pz);
-    crown.rotation.y = rotY;
-
-    // 牙冠上方（上顎）/ 下方（下顎）加一個略帶弧度的齒頸縮口效果
-    // 用微微縮放的 clone 疊加
-    const neck = crown.clone();
-    neck.material = crown.material;
-    const s = TOOTH_SHAPES[type] || TOOTH_SHAPES.molar;
-    const neckScale = isUpper ? 1 : 1;
-    neck.scale.set(0.82, 0.14, 0.88);
-    neck.position.set(px, isUpper ? yBase : yBase, pz);
-    neck.rotation.y = rotY;
-    // neck 僅為視覺輔助，不加入 interactable
-
-    (isUpper ? upperGroup : lowerGroup).add(crown);
-  });
-
-  // 牙齦管
-  const gum = buildGumTube(isUpper, archA, archB, yBase);
-  (isUpper ? upperGroup : lowerGroup).add(gum);
-}
-
-// ── 初始化場景 ────────────────────────────────────────────
 function init() {
   const container = document.getElementById('canvas-container');
 
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.01, 100);
-  camera.position.set(0, 0.1, 0.90);
+  scene  = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.01, 100);
+  camera.position.set(0, 0, 50); // 將隨模型大小調整
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(container.clientWidth, container.clientHeight);
@@ -146,71 +29,112 @@ function init() {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
-  controls.target.set(0, 0, 0.18);
-  controls.minDistance = 0.1;
-  controls.maxDistance = 3.0;
-  controls.update();
-
-  // 燈光（多向光，讓牙齒有立體感）
-  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-  const dl1 = new THREE.DirectionalLight(0xffffff, 1.3);
-  dl1.position.set(0.5, 2, 2); scene.add(dl1);
-  const dl2 = new THREE.DirectionalLight(0xfff0e0, 0.6);
-  dl2.position.set(-1, -0.5, -1); scene.add(dl2);
-  const dl3 = new THREE.DirectionalLight(0xffffff, 0.4);
-  dl3.position.set(0, -1, 2); scene.add(dl3);
-
-  // Upper arch: 寬 0.42, 深 0.30, y = +0.14（牙齦線在 0.14）
-  buildArch(UPPER_TEETH, true,  0.42, 0.30,  0.14);
-  // Lower arch: 寬 0.38, 深 0.27, y = −0.14
-  buildArch(LOWER_TEETH, false, 0.38, 0.27, -0.14);
-
-  scene.add(upperGroup);
-  scene.add(lowerGroup);
+  
+  // 燈光
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  const dl1 = new THREE.DirectionalLight(0xffffff, 1.2); dl1.position.set(1, 1, 2); scene.add(dl1);
+  const dl2 = new THREE.DirectionalLight(0xfff5e8, 0.5); dl2.position.set(-1, -1, -1); scene.add(dl2);
+  const dl3 = new THREE.DirectionalLight(0xffffff, 0.35); dl3.position.set(0, 2, -1); scene.add(dl3);
 
   raycaster = new THREE.Raycaster();
   mouse     = new THREE.Vector2();
-
-  document.getElementById('loading-overlay').style.display = 'none';
 
   window.addEventListener('resize', onWindowResize);
   container.addEventListener('mousemove', onMouseMove);
   container.addEventListener('click', onClick);
 
   setupUIControls();
+  loadModel();
   animate();
 }
 
+function loadModel() {
+  const loader = new THREE.GLTFLoader();
+  const overlay = document.getElementById('loading-overlay');
+  
+  loader.load(
+    './assets/models/human_teeth.glb',
+    function (gltf) {
+      teethModel = gltf.scene;
+      
+      // 自動置中與縮放
+      const box = new THREE.Box3().setFromObject(teethModel);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      
+      teethModel.position.x += (teethModel.position.x - center.x);
+      teethModel.position.y += (teethModel.position.y - center.y);
+      teethModel.position.z += (teethModel.position.z - center.z);
+      
+      const scale = 2.0 / maxDim; // 縮放至約 2 單位大
+      teethModel.scale.set(scale, scale, scale);
+      
+      scene.add(teethModel);
+      
+      // 設定視角
+      camera.position.set(0, 0, 3);
+      controls.target.set(0, 0, 0);
+      controls.update();
+
+      // 提取可互動網格
+      teethModel.traverse((child) => {
+        if (child.isMesh) {
+          interactableObjects.push(child);
+          originalMaterials.set(child.uuid, child.material);
+        }
+      });
+      
+      console.log(`成功載入牙齒模型！網格數: ${interactableObjects.length}`);
+      if (overlay) overlay.style.display = 'none';
+    },
+    function (xhr) {
+      if (overlay) {
+        overlay.innerHTML = `<div class="spinner"></div><p>載入中... ${Math.round(xhr.loaded / xhr.total * 100)}%</p>`;
+      }
+    },
+    function (error) {
+      console.error('模型載入失敗:', error);
+      if (overlay) overlay.innerHTML = '<p style="color:#ff6b6b">模型載入失敗！請確認 assets/models/human_teeth.glb 是否存在。</p>';
+    }
+  );
+}
+
 // ── 互動 ─────────────────────────────────────────────────
-function onMouseMove(event) {
+function onMouseMove(evt) {
   const c = document.getElementById('canvas-container');
   const r = c.getBoundingClientRect();
-  mouse.x =  ((event.clientX - r.left) / c.clientWidth)  * 2 - 1;
-  mouse.y = -((event.clientY - r.top)  / c.clientHeight) * 2 + 1;
+  mouse.x =  ((evt.clientX - r.left) / c.clientWidth)  * 2 - 1;
+  mouse.y = -((evt.clientY - r.top)  / c.clientHeight) * 2 + 1;
 }
 
 function onClick() {
   raycaster.setFromCamera(mouse, camera);
   const hits = raycaster.intersectObjects(interactableObjects, false);
 
-  // 還原選取
-  selectedMeshes.forEach(m => { m.material = originalMaterials.get(m.uuid) || m.material; });
-  selectedMeshes = [];
+  if (selectedMesh) {
+    selectedMesh.material = originalMaterials.get(selectedMesh.uuid) || selectedMesh.material;
+    selectedMesh = null;
+  }
 
   if (!hits.length) { closeInfoPanel(); return; }
-
-  const mesh     = hits[0].object;
-  const toothNum = mesh.userData.toothNum;
-  if (!toothNum) { closeInfoPanel(); return; }
-
-  // 高亮
+  
+  const mesh = hits[0].object;
   mesh.material = highlightMat.clone();
-  selectedMeshes = [mesh];
+  selectedMesh = mesh;
 
-  const data = window.getTeethData ? window.getTeethData(toothNum) :
-               { zh: `牙齒 #${toothNum}`, en: '', system: '牙齒', desc: '' };
+  // 如果模型有名稱，可以嘗試解析牙位，否則顯示通用資訊
+  const meshName = mesh.name || '';
+  
+  const data = { 
+    system: '牙齒模型', 
+    zh: meshName || '選取的部位', 
+    en: '', 
+    desc: '這是一顆由真實 3D 掃描/建模生成的牙齒模型。由於是外部匯入的模型，目前無法自動分辨精確牙位。' 
+  };
+  
   document.getElementById('info-system').innerText      = data.system;
-  document.getElementById('info-tooth-num').innerText   = `牙位 #${toothNum}`;
+  document.getElementById('info-tooth-num').innerText   = '';
   document.getElementById('info-title-zh').innerText    = data.zh;
   document.getElementById('info-title-en').innerText    = data.en;
   document.getElementById('info-description').innerText = data.desc;
@@ -218,30 +142,27 @@ function onClick() {
 }
 
 function closeInfoPanel() {
-  selectedMeshes.forEach(m => { m.material = originalMaterials.get(m.uuid) || m.material; });
-  selectedMeshes = [];
+  if (selectedMesh) {
+    selectedMesh.material = originalMaterials.get(selectedMesh.uuid) || selectedMesh.material;
+    selectedMesh = null;
+  }
   document.getElementById('info-panel').classList.remove('open');
 }
 
-// ── UI 控制 ──────────────────────────────────────────────
+// ── UI ───────────────────────────────────────────────────
 function setupUIControls() {
   document.getElementById('close-info').addEventListener('click', closeInfoPanel);
-  document.getElementById('toggle-upper')?.addEventListener('change', e => { upperGroup.visible = e.target.checked; });
-  document.getElementById('toggle-lower')?.addEventListener('change', e => { lowerGroup.visible = e.target.checked; });
 
   const VIEWS = {
-    front:  [0,   0.05,  0.90],
-    top:    [0,   0.90,  0.20],
-    bottom: [0,  -0.90,  0.20],
-    left:   [-0.90, 0.05, 0.18],
+    front:  [0,   0,    3],
+    top:    [0,   3,    0.5],
+    bottom: [0,  -3,    0.5],
+    left:   [-3,  0,    0.5],
   };
   document.querySelectorAll('.camera-views .btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const v = VIEWS[btn.dataset.view];
-      if (!v) return;
-      camera.position.set(...v);
-      controls.target.set(0, 0, 0.18);
-      controls.update();
+      if (v) { camera.position.set(...v); controls.target.set(0, 0, 0); controls.update(); }
     });
   });
 }
