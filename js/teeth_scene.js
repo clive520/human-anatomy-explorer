@@ -29,6 +29,8 @@ function init() {
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
+  controls.minDistance = 0.1;
+  controls.maxDistance = 50.0;
   
   // 燈光
   scene.add(new THREE.AmbientLight(0xffffff, 0.8));
@@ -57,29 +59,43 @@ function loadModel() {
     function (gltf) {
       teethModel = gltf.scene;
       
-      // 自動置中與縮放
+      // 用一個 Group 包裝以便於縮放與置中
+      const wrapper = new THREE.Group();
+      wrapper.add(teethModel);
+      
       const box = new THREE.Box3().setFromObject(teethModel);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
       
-      teethModel.position.x += (teethModel.position.x - center.x);
-      teethModel.position.y += (teethModel.position.y - center.y);
-      teethModel.position.z += (teethModel.position.z - center.z);
+      // 1. 將模型在其局部空間中置中
+      teethModel.position.x = -center.x;
+      teethModel.position.y = -center.y;
+      teethModel.position.z = -center.z;
       
-      const scale = 2.0 / maxDim; // 縮放至約 2 單位大
-      teethModel.scale.set(scale, scale, scale);
+      // 2. 縮放外層 wrapper
+      // 檢查 maxDim 是否異常大（如果有雜訊點）
+      let scale = 3.0 / maxDim;
+      if (scale < 0.001) scale = 1; // 防呆機制
+      wrapper.scale.set(scale, scale, scale);
       
-      scene.add(teethModel);
+      scene.add(wrapper);
       
       // 設定視角
-      camera.position.set(0, 0, 3);
+      camera.position.set(0, 0, 4);
       controls.target.set(0, 0, 0);
       controls.update();
 
-      // 提取可互動網格
+      // 提取可互動網格，確保雙面渲染
       teethModel.traverse((child) => {
         if (child.isMesh) {
+          if (child.material) {
+            child.material.side = THREE.DoubleSide;
+            // 如果模型太黑，可以給點基礎亮度
+            if (child.material.color.getHex() === 0x000000) {
+              child.material.color.setHex(0xeeeeee);
+            }
+          }
           interactableObjects.push(child);
           originalMaterials.set(child.uuid, child.material);
         }
@@ -154,10 +170,10 @@ function setupUIControls() {
   document.getElementById('close-info').addEventListener('click', closeInfoPanel);
 
   const VIEWS = {
-    front:  [0,   0,    3],
-    top:    [0,   3,    0.5],
-    bottom: [0,  -3,    0.5],
-    left:   [-3,  0,    0.5],
+    front:  [0,   0,    4],
+    top:    [0,   4,    0.5],
+    bottom: [0,  -4,    0.5],
+    left:   [-4,  0,    0.5],
   };
   document.querySelectorAll('.camera-views .btn').forEach(btn => {
     btn.addEventListener('click', () => {
