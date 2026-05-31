@@ -8,10 +8,13 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#0a0a0a" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
   
   <!-- CSS -->
-  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/base.css?v=5" />
   <link rel="stylesheet" href="./css/components.css" />
   
   <style>
@@ -136,6 +139,14 @@
   <!-- Three.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <!-- Hero Animation Script -->
-  <script src="./js/hero-scene.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('ServiceWorker registered:', reg.scope);
+        }).catch(err => console.log('ServiceWorker error:', err));
+      });
+    }
+  </script>
 </body>
 </html>

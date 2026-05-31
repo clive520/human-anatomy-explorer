@@ -52,10 +52,16 @@ function init() {
 
 function loadModel() {
   const loader = new THREE.GLTFLoader();
+  
+  // Set up DRACOLoader
+  const dracoLoader = new THREE.DRACOLoader();
+  dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');
+  loader.setDRACOLoader(dracoLoader);
+
   const overlay = document.getElementById('loading-overlay');
   
   loader.load(
-    './assets/models/human_teeth_segmented.glb',
+    './assets/models/human_teeth_segmented_draco.glb',
     function (gltf) {
       teethModel = gltf.scene;
       

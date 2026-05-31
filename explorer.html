@@ -8,6 +8,9 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png" />
+  <meta name="theme-color" content="#0a0a0a" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif:ital@0;1&display=swap" rel="stylesheet">
   
   <!-- CSS -->
@@ -173,5 +176,14 @@
   <script src="./js/data/digestive.js?v=1"></script>
   <script src="./js/data/urinary.js?v=1"></script>
   <script src="./js/scene.js?v=11"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('ServiceWorker registered:', reg.scope);
+        }).catch(err => console.log('ServiceWorker error:', err));
+      });
+    }
+  </script>
 </body>
 </html>
